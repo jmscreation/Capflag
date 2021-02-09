@@ -1,0 +1,34 @@
+#include "resource.h"
+
+_PNG_GAME_SPRITES   RCDATA ".\\resources\\sprites.png"
+
+_PNG_BACKGROUND     RCDATA ".\\resources\\background.png"
+
+
+_FONT_MAIN          RCDATA ".\\resources\\BRITANIC.TTF"
+_FONT_MENU          RCDATA ".\\resources\\ANTQUABOLD.TTF"
+_FONT_ERROR         RCDATA ".\\resources\\BellGothicStd-Black.otf"
+
+_OGG_MENU_MUSIC     RCDATA ".\\resources\\menu_music.ogg"
+_OGG_GAME_MUSIC     RCDATA ".\\resources\\game_music.ogg"
+
+_OGG_POINT          RCDATA ".\\resources\\point.ogg"
+_OGG_GUN            RCDATA ".\\resources\\gun.ogg"
+_OGG_ALERT          RCDATA ".\\resources\\flagalert.ogg"
+_OGG_LOSEFLAG       RCDATA ".\\resources\\loseflag.ogg"
+_OGG_HURT           RCDATA ".\\resources\\hurt.ogg"
+
+_OGG_DIE1           RCDATA ".\\resources\\die1.ogg"
+_OGG_DIE2           RCDATA ".\\resources\\die2.ogg"
+_OGG_DIE3           RCDATA ".\\resources\\die3.ogg"
+
+_OGG_MISS1          RCDATA ".\\resources\\miss1.ogg"
+_OGG_MISS2          RCDATA ".\\resources\\miss2.ogg"
+_OGG_MISS3          RCDATA ".\\resources\\miss3.ogg"
+_OGG_MISS4          RCDATA ".\\resources\\miss4.ogg"
+_OGG_MISS5          RCDATA ".\\resources\\miss5.ogg"
+_OGG_MISS6          RCDATA ".\\resources\\miss6.ogg"
+_OGG_MISS7          RCDATA ".\\resources\\miss7.ogg"
+_OGG_MISS8          RCDATA ".\\resources\\miss8.ogg"
+_OGG_MISS9          RCDATA ".\\resources\\miss9.ogg"
+_OGG_MISS10         RCDATA ".\\resources\\miss10.ogg"

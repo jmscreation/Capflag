@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="CapFlag" />
+		<Option pch_mode="2" />
+		<Option compiler="gnu_gcc_1020_compiler" />
+		<Build>
+			<Target title="Game Release">
+				<Option platforms="Windows;" />
+				<Option output="CapFlag32" prefix_auto="1" extension_auto="1" />
+				<Option type="0" />
+				<Option compiler="gnu_gcc_1020_compiler" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Compiler>
+					<Add directory="Capflag/game" />
+				</Compiler>
+				<Linker>
+					<Add library="libengine-s.a" />
+					<Add library="libportaudio-s.a" />
+					<Add directory="./library/SFML-2.5.1/lib" />
+				</Linker>
+			</Target>
+			<Target title="Game Debug">
+				<Option platforms="Windows;" />
+				<Option output="CapFlag32_debug" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gnu_gcc_1020_compiler" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Compiler>
+					<Add option="-DDEBUG_MODE" />
+					<Add directory="Capflag/game" />
+				</Compiler>
+				<Linker>
+					<Add library="libengine-s.a" />
+					<Add library="libportaudio-s.a" />
+					<Add directory="./library/SFML-2.5.1/lib" />
+				</Linker>
+			</Target>
+			<Target title="Game Release 64bit">
+				<Option platforms="Windows;" />
+				<Option output="CapFlag" prefix_auto="1" extension_auto="1" />
+				<Option object_output=".objs64" />
+				<Option type="0" />
+				<Option compiler="gnu_gcc_1020_64bit_compiler" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Compiler>
+					<Add directory="Capflag/game" />
+				</Compiler>
+				<Linker>
+					<Add library="libengine64-s.a" />
+					<Add library="libportaudio64-s.a" />
+					<Add directory="./library/SFML-2.5.1/lib64" />
+				</Linker>
+			</Target>
+			<Target title="Game Debug 64bit">
+				<Option platforms="Windows;" />
+				<Option output="CapFlag_debug" prefix_auto="1" extension_auto="1" />
+				<Option object_output=".objs64" />
+				<Option type="1" />
+				<Option compiler="gnu_gcc_1020_64bit_compiler" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Compiler>
+					<Add option="-DDEBUG_MODE" />
+					<Add directory="Capflag/game" />
+				</Compiler>
+				<Linker>
+					<Add library="libengine64-s.a" />
+					<Add library="libportaudio64-s.a" />
+					<Add directory="./library/SFML-2.5.1/lib64" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-std=c++20" />
+			<Add option="-DSFML_STATIC" />
+			<Add directory="./library/SFML-2.5.1/include" />
+			<Add directory="./game" />
+			<Add directory="./library/engine" />
+			<Add directory="../libraries/FileFormat/fileFormatTest" />
+			<Add directory="./library" />
+			<Add directory="../libraries/sha1" />
+			<Add directory="../libraries/pathgrid" />
+		</Compiler>
+		<Linker>
+			<Add option="-s" />
+			<Add option="-static-libstdc++" />
+			<Add option="-static-libgcc" />
+			<Add option="-static" />
+			<Add option="-lpthread" />
+			<Add library="sfml-graphics-s" />
+			<Add library="sfml-window-s" />
+			<Add library="sfml-system-s" />
+			<Add library="sfml-network-s" />
+			<Add library="setupapi" />
+			<Add library="winmm" />
+			<Add library="opengl32" />
+			<Add library="gdi32" />
+			<Add library="freetype" />
+			<Add library="ws2_32" />
+			<Add library="comdlg32" />
+			<Add directory="./library" />
+		</Linker>
+		<Unit filename="../libraries/pathgrid/pathgrid.cpp" />
+		<Unit filename="../libraries/pathgrid/pathgrid.h" />
+		<Unit filename="../libraries/sha1/sha1.cpp" />
+		<Unit filename="../libraries/sha1/sha1.h" />
+		<Unit filename="classdefines.h" />
+		<Unit filename="defines.h" />
+		<Unit filename="game/animations.cpp" />
+		<Unit filename="game/animations.h" />
+		<Unit filename="game/configfile.cpp" />
+		<Unit filename="game/configfile.h" />
+		<Unit filename="game/game.cpp" />
+		<Unit filename="game/game.h" />
+		<Unit filename="game/gamecontroller.cpp" />
+		<Unit filename="game/gamecontroller.h" />
+		<Unit filename="game/gameobject.cpp" />
+		<Unit filename="game/gameobject.h" />
+		<Unit filename="game/gameobjects.cpp" />
+		<Unit filename="game/gameobjects.h" />
+		<Unit filename="game/includes.h" />
+		<Unit filename="game/inputcontroller.cpp" />
+		<Unit filename="game/inputcontroller.h" />
+		<Unit filename="game/mainmenu.cpp" />
+		<Unit filename="game/mainmenu.h" />
+		<Unit filename="game/mplayclient.cpp" />
+		<Unit filename="game/mplayclient.h" />
+		<Unit filename="game/mplaycontroller.cpp" />
+		<Unit filename="game/mplaycontroller.h" />
+		<Unit filename="game/mplayserver.cpp" />
+		<Unit filename="game/mplayserver.h" />
+		<Unit filename="game/resource.h" />
+		<Unit filename="game/resource.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="game/serverannounce.cpp" />
+		<Unit filename="game/serverannounce.h" />
+		<Unit filename="game/serversearch.cpp" />
+		<Unit filename="game/serversearch.h" />
+		<Unit filename="importmap.cpp" />
+		<Unit filename="importmap.h" />
+		<Unit filename="library/engine/active.h" />
+		<Unit filename="library/engine/animation.h" />
+		<Unit filename="library/engine/app.h" />
+		<Unit filename="library/engine/arbgrid.h" />
+		<Unit filename="library/engine/audio.h" />
+		<Unit filename="library/engine/collidable.h" />
+		<Unit filename="library/engine/dialog.h" />
+		<Unit filename="library/engine/drawable.h" />
+		<Unit filename="library/engine/engine.h" />
+		<Unit filename="library/engine/gameobject.h" />
+		<Unit filename="library/engine/inputhandler.h" />
+		<Unit filename="library/engine/mask.h" />
+		<Unit filename="library/engine/portaudio.h" />
+		<Unit filename="library/engine/resources.h" />
+		<Unit filename="library/engine/sortlist.h" />
+		<Unit filename="library/engine/stb_vorbis.h" />
+		<Unit filename="library/engine/view.h" />
+		<Unit filename="main.cpp" />
+		<Unit filename="main.h" />
+		<Extensions>
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
