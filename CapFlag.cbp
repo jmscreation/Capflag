@@ -24,6 +24,7 @@
 			<Target title="Game Debug">
 				<Option platforms="Windows;" />
 				<Option output="CapFlag32_debug" prefix_auto="1" extension_auto="1" />
+				<Option object_output=".objsdbg" />
 				<Option type="1" />
 				<Option compiler="gnu_gcc_1020_compiler" />
 				<Option projectLinkerOptionsRelation="2" />
@@ -56,7 +57,7 @@
 			<Target title="Game Debug 64bit">
 				<Option platforms="Windows;" />
 				<Option output="CapFlag_debug" prefix_auto="1" extension_auto="1" />
-				<Option object_output=".objs64" />
+				<Option object_output=".objs64dbg" />
 				<Option type="1" />
 				<Option compiler="gnu_gcc_1020_64bit_compiler" />
 				<Option projectLinkerOptionsRelation="2" />
@@ -76,9 +77,9 @@
 			<Add option="-DSFML_STATIC" />
 			<Add directory="./library/SFML-2.5.1/include" />
 			<Add directory="./game" />
-			<Add directory="./library/engine" />
 			<Add directory="./library" />
-			<Add directory="../libraries/sha1" />
+			<Add directory="./library/engine" />
+			<Add directory="./library/sha1" />
 			<Add directory="../libraries/pathgrid" />
 		</Compiler>
 		<Linker>
@@ -102,8 +103,6 @@
 		</Linker>
 		<Unit filename="../libraries/pathgrid/pathgrid.cpp" />
 		<Unit filename="../libraries/pathgrid/pathgrid.h" />
-		<Unit filename="../libraries/sha1/sha1.cpp" />
-		<Unit filename="../libraries/sha1/sha1.h" />
 		<Unit filename="classdefines.h" />
 		<Unit filename="defines.h" />
 		<Unit filename="game/animations.cpp" />
@@ -156,6 +155,7 @@
 		<Unit filename="library/engine/sortlist.h" />
 		<Unit filename="library/engine/stb_vorbis.h" />
 		<Unit filename="library/engine/view.h" />
+		<Unit filename="library/sha1/sha1.cpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="main.h" />
 		<Extensions>

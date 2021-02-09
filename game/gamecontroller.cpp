@@ -4,6 +4,7 @@ using namespace std;
 using namespace Engine;
 
 GameController* GameController::currentController = nullptr;
+GameSettings GameController::settings;
 
 GameController& GameController::current() {
     if(currentController == nullptr) currentController = new GameController;
@@ -221,7 +222,7 @@ void GameController::step(sf::Time &delta){
         startTimer.restart();
     }
     if(isHost){
-        if(spawnBonusTimer.getElapsedTime().asSeconds() > 5){
+        if(spawnBonusTimer.getElapsedTime().asSeconds() > settings.bonusSpawnTime){
             float xx, yy;
             do {
                 xx = float(gameArea.left + rand() % int(gameArea.width*10)) / 10.f;

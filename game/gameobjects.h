@@ -87,13 +87,13 @@ public:
     inline virtual int type() { return GAMEOBJ_PLAYER; }
 
     unsigned int life, ammo, bonusType;
-    bool bonusActive, isAi;
+    bool isAi;
     int team;
     float dir, alpha;
     PathGrid::PathFinder* myPath;
 
-    bool mplayUpdated, mplayFired, mplayBonusReset, mplayRespawn;
-    unsigned int mplayID, mplayBonus;
+    bool mplayUpdated, mplayFired, mplayRespawn;
+    unsigned int mplayID, mplayBonus, mplayBonusReset;
 
     inline bool isDead() { return !canMove; }
     bool isMe() const;
@@ -103,20 +103,25 @@ public:
     virtual void moveUp();
     virtual void moveDown();
     virtual void shootGun();
+    virtual void clearBonus();
     virtual void setDirection(float dir);
     virtual void activateBonus();
     virtual void hitPlayer(float damage);
     virtual void killMe();
     virtual void respawnMe();
-    virtual void resetBonusStatus();
+    virtual void resetBonusStatus(int bonus);
 
     void collide(CFGameObject* other);
 
 protected:
     unsigned int magSize;
+
+    bool bonusActive[BONUS_TYPE_COUNT];
+    sf::Clock bonusExpires[BONUS_TYPE_COUNT];
+
     float speed, moveSpeed;
     bool canMove, invisible;
-    sf::Clock canShoot, respawn, reload, bonusExpires, updatePath;
+    sf::Clock canShoot, respawn, reload, updatePath;
 
     virtual void step(sf::Time& delta);
 };

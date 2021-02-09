@@ -1,17 +1,18 @@
 #ifndef GAMECONTROLLER_H
 #define GAMECONTROLLER_H
 
-
 class GameController : public Engine::Active , public Engine::WorldDrawable {
     static GameController* currentController;
 public:
     virtual ~GameController();
     static GameController& current();
 
+    static GameSettings settings;
+
     void setControlPlayer(CFGameObject* obj);
     inline MapObj_Player* getControlPlayer() { return (MapObj_Player*)playerControlled; }
     inline int getTeamScore(int team) { if(team >= gameScores.size()) return 0; return gameScores.at(team); }
-    inline int getGameTimeLeft() { return std::max(int(gameTimeLength - gameTime.getElapsedTime().asSeconds()), 0); }
+    inline int getGameTimeLeft() { return std::max(int(settings.gameTime - gameTime.getElapsedTime().asSeconds()), 0); }
 
     sf::Vector2f getBasePos(int team);
     const std::string getBonusName(unsigned int ty) const;
@@ -22,7 +23,7 @@ public:
     int spawnBonus(float xx, float yy, int ty=-1);
     inline void endGame() { gameEnd = true; }
 
-    unsigned int mplayID, gameTimeLength;
+    unsigned int mplayID;
     size_t gameSync;
     int myTeam;
     bool isHost, gameEnd, gameStarted;

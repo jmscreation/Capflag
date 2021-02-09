@@ -110,14 +110,15 @@ void MplayController::updateWriteStep(sf::Packet& buf) {
         MapObj_Player& obj = *GameController::current().getControlPlayer();
         if(obj.mplayUpdated){
             sf::Uint8 flags;
-            flags = obj.mplayFired*1 + obj.isDead()*2 + obj.mplayBonusReset*4 + obj.mplayRespawn*8;
-            buf << sf::Uint8(CMD_GAME_DATA) << sf::Uint8(GAME_DATA_UPDATE_PLAYER) << sf::Uint32(obj.mplayID) << sf::Int16(obj.x()) << sf::Int16(obj.y()) << obj.direction << sf::Uint8(obj.mplayBonus) << flags;
+            flags = obj.mplayFired*1 + obj.isDead()*2 + obj.mplayRespawn*4;
+            buf << sf::Uint8(CMD_GAME_DATA) << sf::Uint8(GAME_DATA_UPDATE_PLAYER) << sf::Uint32(obj.mplayID) << sf::Int16(obj.x()) << sf::Int16(obj.y()) << obj.direction
+                << sf::Uint8(obj.mplayBonus) << sf::Uint8(obj.mplayBonusReset) << flags;
 
             obj.mplayUpdated = false;
             obj.mplayFired = false;
-            obj.mplayBonusReset = false;
             obj.mplayRespawn = false;
             obj.mplayBonus = BONUS_NONE;
+            obj.mplayBonusReset = BONUS_NONE;
         }
     }
 
@@ -136,9 +137,10 @@ void MplayController::updateWriteStep(sf::Packet& buf) {
                     //Update all AI players data
                     MapObj_Player& obj = *(MapObj_Player*)o;
                     if(obj.mplayUpdated){
-                        sf::Uint8 flags, bonus;
-                        flags = obj.mplayFired*1 + obj.isDead()*2; // 4, 8 are not allowed for AI
-                        buf << sf::Uint8(CMD_GAME_DATA) << sf::Uint8(GAME_DATA_UPDATE_PLAYER) << sf::Uint32(obj.mplayID) << sf::Int16(obj.x()) << sf::Int16(obj.y()) << obj.direction << bonus << flags;
+                        sf::Uint8 flags;
+                        flags = obj.mplayFired*1 + obj.isDead()*2; // 4 are not allowed for AI
+                        buf << sf::Uint8(CMD_GAME_DATA) << sf::Uint8(GAME_DATA_UPDATE_PLAYER) << sf::Uint32(obj.mplayID) << sf::Int16(obj.x()) << sf::Int16(obj.y()) << obj.direction
+                            << sf::Uint8(obj.mplayBonus) << sf::Uint8(obj.mplayBonusReset) << flags;
                         obj.mplayUpdated = false;
                         obj.mplayFired = false;
                     }
@@ -189,11 +191,11 @@ bool MplayController::updateReadStep(sf::Packet& buf) {
             sf::Uint32 id;
             sf::Int16 xx, yy;
             float dir;
-            sf::Uint8 flags, bonus;
+            sf::Uint8 flags, bonus, bonusReset;
 
-            if( ! (buf >> id >> xx >> yy >> dir >> bonus >> flags) ) return false;
+            if( ! (buf >> id >> xx >> yy >> dir >> bonus >> bonusReset >> flags) ) return false;
 
-            bool fired, dead, bonusReset, respawn;
+            bool fired, dead, respawn;
 
             MapObj_Player* o;
             if(getPlayerById(id, o)){
@@ -202,14 +204,14 @@ bool MplayController::updateReadStep(sf::Packet& buf) {
 
                 fired = flags & 1;
                 dead = flags & 2;
-                bonusReset = flags & 4;
-                respawn = flags & 8;
+                respawn = flags & 4;
 
                 if(fired) o->shootGun(); // player fire gun
                 if(dead) o->killMe(); // kill player
                 if(respawn) o->respawnMe(); // respawn player
-                if(bonusReset) o->resetBonusStatus(); // reset bonus state
-
+                if(bonusReset != BONUS_NONE){
+                    o->resetBonusStatus(bonusReset); // reset bonus state
+                }
                 if(bonus != BONUS_NONE){ // activate bonus state
                     o->bonusType = bonus;
                     o->activateBonus();
@@ -349,8 +351,7 @@ void MplayController::step(sf::Time& delta){
                 break;
             }
             if(cmd == CMD_GAME_INFO){
-                unsigned int time;
-                inData >> time;
+                inData >> GameController::settings;
                 continue;
             }
             if(cmd == CMD_NEW_CLIENT){

@@ -38,6 +38,8 @@ MyGame::MyGame(): App(1, 1, "", sf::Style::None){
     }
     gameAnimations = new CFGameAnimations;  //Init game animations
 
+    memset(&GameController::settings, 0, sizeof(GameSettings)); // zero fill game settings
+
     new MainMenu;
     setWindowTransparency(255);
 
@@ -155,4 +157,27 @@ void MyGame::collision_with_object(CFGameObject* m, CFGameObject* o, float speed
             }
         }
     }
+}
+
+sf::Packet& operator<<(sf::Packet& out, const GameSettings& in) {
+    out << sf::Uint32(in.magSize) << sf::Uint32(in.gameTime) << sf::Uint32(in.bonusSpawnTime);
+    for(int i=0; i<BONUS_TYPE_COUNT; ++i) out << sf::Uint32(in.bonusDuration[i]);
+
+    return out;
+}
+
+sf::Packet& operator>>(sf::Packet& in, GameSettings& out) {
+    sf::Uint32 mSize, gTime, bsTime, bTime;
+
+    in >> mSize >> gTime >> bsTime;
+    for(int i=0; i<BONUS_TYPE_COUNT; ++i){
+        in >> bTime;
+        out.bonusDuration[i] = bTime;
+    }
+
+    out.magSize = mSize;
+    out.gameTime = gTime;
+    out.bonusSpawnTime = bsTime;
+
+    return in;
 }

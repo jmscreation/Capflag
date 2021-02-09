@@ -126,13 +126,12 @@ MapObj_Player::MapObj_Player(int x, int y, int t) : CFGameObject(x, y, type()) {
     sprite.frame(t);
     team = t;
 
-    magSize = 20; // magazine size
+    magSize = GameController::current().settings.magSize; // magazine size
     moveSpeed = 2.1; // default speed player should move at
     life = 100; // health
     alpha = 255; // visibility
     ammo = magSize; // current ammo in magazine
     bonusType = BONUS_NONE; // holding bonus
-    bonusActive = false; // bonus currently active
 
     dir = 0;
     speed = moveSpeed; // current moving speed of player
@@ -194,9 +193,11 @@ void MapObj_Player::step(sf::Time &delta) {
         if(!ammo && reload.getElapsedTime().asSeconds() > 4) {
             ammo = magSize;
         }
-        if(bonusActive && bonusExpires.getElapsedTime().asSeconds() > 14){
-            bonusActive = false;
-            resetBonusStatus();
+        for(int i=0;i<BONUS_TYPE_COUNT;++i){
+            if(bonusActive[i] && bonusExpires[i].getElapsedTime().asSeconds() > GameController::settings.bonusDuration[i]){
+                bonusActive[i] = false;
+                resetBonusStatus(i);
+            }
         }
     }
     CFGameObject::step(delta);  //inherit
@@ -228,7 +229,7 @@ void MapObj_Player::setDirection(float d) {
 }
 void MapObj_Player::shootGun() {
     if(!canMove) return;
-    if(isMe() && !ammo) return;
+    if((isMe() || (isHost && isAi)) && !ammo) return;
     if(canShoot.getElapsedTime().asSeconds() > 0.25) {
         float xx, yy;
         MyGame::lengthdir(16, direction, xx, yy);
@@ -241,8 +242,13 @@ void MapObj_Player::shootGun() {
         }
         canShoot.restart();
     }
-    mplayFired = true;
-    mplayUpdated = true;
+    if(isMe() || (isHost && isAi)){
+        mplayFired = true;
+        mplayUpdated = true;
+    }
+}
+void MapObj_Player::clearBonus() {
+    bonusType = BONUS_NONE;
 }
 void MapObj_Player::hitPlayer(float damage) {
     if(!canMove) return;
@@ -280,6 +286,8 @@ void MapObj_Player::killMe() {
 void MapObj_Player::respawnMe() {
     sprite.setColor(sf::Color::White);
     canMove = true;
+    invisible = false;
+    speed = moveSpeed;
     if(isMe()){
         #ifdef DEBUG_MODE
         bonusType = BONUS_SPAWNAI;
@@ -287,7 +295,7 @@ void MapObj_Player::respawnMe() {
         bonusType = BONUS_NONE;
         #endif
         life = 100;
-        bonusActive = false;
+        for(int i=0;i<BONUS_TYPE_COUNT;++i) bonusActive[i] = false; // bonus type active state
         GameController& cont = GameController::current();
         sf::Vector2f pos = cont.getBasePos(team);
         setPosition(pos.x, pos.y);
@@ -302,17 +310,15 @@ void MapObj_Player::activateBonus() {
     if(bonusType == BONUS_NONE) return;
 
     GameController& cont = GameController::current();
-
-    if(bonusActive){
-        resetBonusStatus();
-    }
-
+    bool bonusHasDuration = false;
     switch(bonusType){
         case BONUS_SPEED:
             speed = moveSpeed + 1.4;
+            bonusHasDuration = true;
         break;
         case BONUS_INVISIBLE:
             invisible = true;
+            bonusHasDuration = true;
         break;
         case BONUS_WARPBASE:
             if(isMe()){
@@ -345,21 +351,32 @@ void MapObj_Player::activateBonus() {
 
     cout << "Bonus Activated: " << bonusType << endl;
 
-    if(isMe()){
+    if(isMe() || (isHost && isAi)){
+        if(bonusHasDuration){
+            bonusActive[bonusType] = true;
+            bonusExpires[bonusType].restart();
+        }
         mplayBonus = bonusType;
         mplayUpdated = true;
     }
 
-    bonusActive = true;
     bonusType = BONUS_NONE;
-    bonusExpires.restart();
 }
-void MapObj_Player::resetBonusStatus() {
-    speed = moveSpeed;
-    invisible = false;
+void MapObj_Player::resetBonusStatus(int bonus) {
+    switch(bonus){
+        case BONUS_SPEED:
+            speed = moveSpeed;
+            break;
+        case BONUS_INVISIBLE:
+            invisible = false;
+            break;
+    }
 
-    mplayBonusReset = true;
-    mplayUpdated = true;
+    if(isMe() || (isHost && isAi)){
+        bonusActive[bonus] = false;
+        mplayBonusReset = bonus;
+        mplayUpdated = true;
+    }
 }
 void MapObj_Player::collide(CFGameObject* o) {
     switch(o->type()){
@@ -372,7 +389,6 @@ void MapObj_Player::collide(CFGameObject* o) {
             if(type() == GAMEOBJ_PLAYER){
                 MyGame::collision_with_object(this, o, speed);
             } else {
-                //MyGame::collision_with_object(this, o, speed * 3);
             }
             break;}
         case GAMEOBJ_AI:
@@ -388,7 +404,7 @@ void MapObj_Player::collide(CFGameObject* o) {
                 float dir = MyGame::point_direction(other.x(), other.y(), x(), y()),
                       vx, vy;
                 int cx, cy;
-                MyGame::lengthdir(speed*6,dir, vx, vy);
+                MyGame::lengthdir(speed*4,dir, vx, vy);
 
                 cx = round((x() + vx) / 8.f);
                 cy = round((y() + vy) / 8.f);

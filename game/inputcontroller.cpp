@@ -31,6 +31,7 @@ void InputController::keyPress(sf::Event::KeyEvent &evt){
         case sf::Keyboard::W: moveDir |= 8; break;
         case sf::Keyboard::E: moveDir |= 16; break;
         case sf::Keyboard::Space: moveDir |= 32; break;
+        case sf::Keyboard::Q: moveDir |= 64; break;
     }
 }
 
@@ -42,6 +43,7 @@ void InputController::keyRelease(sf::Event::KeyEvent &evt){
         case sf::Keyboard::W: moveDir &= ~8; break;
         case sf::Keyboard::E: moveDir &= ~16; break;
         case sf::Keyboard::Space: moveDir &= ~32; break;
+        case sf::Keyboard::Q: moveDir &= ~64; break;
     }
 }
 
@@ -67,6 +69,9 @@ void InputController::step(sf::Time &delta){
     }
     if(moveDir & 32){   //Shoot
         p.shootGun();
+    }
+    if(moveDir & 64){   //Clear Bonus
+        p.clearBonus();
     }
 
     p.setDirection(MyGame::point_direction(p.x(), p.y(), v.viewMouseX(), v.viewMouseY()));

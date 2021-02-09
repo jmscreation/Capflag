@@ -26,18 +26,6 @@
 #define BULLET_IMPACT_SPARK     2
 
 
-#define BONUS_TYPE_COUNT        6
-#define BONUS_NONE              0
-/// Bonus Types:
-#define BONUS_SPEED             1
-#define BONUS_INVISIBLE         2
-#define BONUS_RETURNFLAG        3
-#define BONUS_WARPBASE          4
-#define BONUS_GAINHEALTH        5
-#define BONUS_SPAWNAI           6
-
-
-
 typedef struct  {
     unsigned int x, y, type, prop;
 } GameObjectType;

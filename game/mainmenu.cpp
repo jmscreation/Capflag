@@ -10,12 +10,11 @@ MplayClient* MainMenu::localClient = new MplayClient;
 ServerSearch* MainMenu::searchController = new ServerSearch;
 ServerAnnounce* MainMenu::broadcastController = new ServerAnnounce(MainMenu::uniqueID);
 
-unsigned int MainMenu::currentTime = 60;
 int MainMenu::currentTeam = TEAM_BLUE;
 string MainMenu::playerName = "";
 MsgBox* MainMenu::messageBox = nullptr;
 
-MainMenu::MainMenu(): currentLevel(new ImportMap(true)) {
+MainMenu::MainMenu(): currentLevel(new ImportMap(true)), currentTime(GameController::settings.gameTime) {
     assert(_this == NULL); _this = this;
     MyGame::current().window().create(sf::VideoMode(256, 256), "Main Menu", sf::Style::Titlebar);
     view().reset({0,0,256,256});
@@ -35,8 +34,8 @@ MainMenu::MainMenu(): currentLevel(new ImportMap(true)) {
 
     sf::IpAddress addr(sf::IpAddress::getLocalAddress());
 
-    { /// Load Config File
-        ConfigFile cfg("config.ini");
+    do { /// Load Config File - Allow Looping Until Satisfied
+        ConfigFile cfg(CONFIG_FILE);
         if(cfg.entryExists("ip")){
             addr = cfg.getEntry("ip")->value;
         } else {
@@ -66,7 +65,69 @@ MainMenu::MainMenu(): currentLevel(new ImportMap(true)) {
             playerName = Dialog::EnvironmentVariable("username");
             cfg.addEntry({"name", playerName});
         }
-    }
+
+        if(cfg.entryExists("gametimer")){
+            try {
+                GameController::settings.gameTime = stoi(cfg.getEntry("gametimer")->value) ;
+            } catch(const exception& e){
+                cfg.deleteEntry("gametimer"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"gametimer", "120"}))
+                continue;
+        }
+
+        if(cfg.entryExists("magsize")){
+            try {
+                GameController::settings.magSize = stoi(cfg.getEntry("magsize")->value) ;
+            } catch(const exception& e){
+                cfg.deleteEntry("magsize"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"magsize", "25"}))
+                continue;
+        }
+
+        if(cfg.entryExists("tm_invisible")){
+            try {
+                GameController::settings.bonusDuration[BONUS_INVISIBLE] = stoi(cfg.getEntry("tm_invisible")->value) ;
+            } catch(const exception& e){
+                cfg.deleteEntry("tm_invisible"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"tm_invisible", "12"}))
+                continue;
+        }
+
+        if(cfg.entryExists("tm_speed")){
+            try {
+                GameController::settings.bonusDuration[BONUS_SPEED] = stoi(cfg.getEntry("tm_speed")->value) ;
+            } catch(const exception& e){
+                cfg.deleteEntry("tm_speed"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"tm_speed", "15"}))
+                continue;
+        }
+
+        if(cfg.entryExists("tm_bonus")){
+            try {
+                GameController::settings.bonusSpawnTime = stoi(cfg.getEntry("tm_bonus")->value) ;
+            } catch(const exception& e){
+                cfg.deleteEntry("tm_bonus"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"tm_bonus", "10"}))
+                continue;
+        }
+
+        break; // don't loop at end
+    } while(1);
 
     connectTo = addr;
     isHost = MplayServer::isRunning();
@@ -100,7 +161,6 @@ void MainMenu::startGame() {    //Server starts game
         GameController& c = GameController::current();
         c.mplayID = localClient->getId();
         c.myTeam = currentTeam;
-        c.gameTimeLength = currentTime;
         cout << "Exiting main menu..." << endl;
         delete this;
         return;
@@ -126,7 +186,7 @@ void MainMenu::sendCommand(sf::Uint8 msg){
 
 void MainMenu::sendGameInfo() {
     sf::Packet buf;
-    buf << sf::Uint8(CMD_GAME_INFO) << currentTime;
+    buf << sf::Uint8(CMD_GAME_INFO) << GameController::settings;
     localClient->sendData(buf);
 }
 
@@ -334,7 +394,7 @@ void MainMenu::step(sf::Time &delta) {
                     }
                 }
                 if(cmd == CMD_GAME_INFO){
-                    inData >> currentTime;
+                    inData >> GameController::settings;
                 }
                 if(cmd == CMD_NEW_CLIENT){
                     string nam;

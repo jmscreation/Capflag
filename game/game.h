@@ -7,6 +7,8 @@
 #define FILE_HEADER     45585354561085
 #define FILE_VERSION    2
 
+#define CONFIG_FILE     "config.ini"
+
 #define RESPAWN_TIME    6 //seconds for respawn
 #define GAMESTART_TIME  3 //seconds for game start
 
@@ -43,6 +45,25 @@
 #define FNT_MENU        1
 #define FNT_ERROR       2
 
+
+#define BONUS_TYPE_COUNT        6
+#define BONUS_NONE              0
+/// Bonus Types:
+#define BONUS_SPEED             1
+#define BONUS_INVISIBLE         2
+#define BONUS_RETURNFLAG        3
+#define BONUS_WARPBASE          4
+#define BONUS_GAINHEALTH        5
+#define BONUS_SPAWNAI           6
+
+
+struct GameSettings {
+    unsigned int magSize, gameTime, bonusSpawnTime,
+                bonusDuration[BONUS_TYPE_COUNT];
+};
+
+sf::Packet& operator<<(sf::Packet& out, const GameSettings& in);
+sf::Packet& operator>>(sf::Packet& in, GameSettings& out);
 
 class MyGame: public Engine::App {
 public:
