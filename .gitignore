@@ -34,7 +34,7 @@
 #other
 *.bat
 *.gmk
-./resources\raw\*
+resources/raw/
 *.layout
 *.depend
 *.ini
