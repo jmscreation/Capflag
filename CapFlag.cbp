@@ -77,7 +77,6 @@
 			<Add directory="./library/SFML-2.5.1/include" />
 			<Add directory="./game" />
 			<Add directory="./library/engine" />
-			<Add directory="../libraries/FileFormat/fileFormatTest" />
 			<Add directory="./library" />
 			<Add directory="../libraries/sha1" />
 			<Add directory="../libraries/pathgrid" />

@@ -13,7 +13,6 @@
 #include "../classdefines.h"
 #include "pathgrid.h"
 #include "sha1.h"
-#include "fileformat.h"
 #include "resource.h"
 #include "animations.h"
 
