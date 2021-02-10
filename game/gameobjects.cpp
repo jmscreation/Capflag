@@ -324,6 +324,8 @@ void MapObj_Player::activateBonus() {
             if(isMe()){
                 sf::Vector2f pos(cont.getBasePos(team));
                 setPosition(pos.x, pos.y);
+                xprev = pos.x;
+                yprev = pos.y;
             }
         break;
         case BONUS_RETURNFLAG:

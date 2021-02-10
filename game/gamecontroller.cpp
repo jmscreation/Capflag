@@ -162,7 +162,7 @@ void GameController::setControlPlayer(CFGameObject* obj) {
 sf::Vector2f GameController::getBasePos(int team) {
     vector<sf::Vector2f> posList;
     for(CFGameObject* o : CFGameObject::gameObjects){
-        if(o->type() != GAMEOBJ_BASE) continue;
+        if(o == nullptr || o->type() != GAMEOBJ_BASE) continue;
         if( ((MapObj_Base*)o)->team == team ) posList.push_back({o->x(), o->y()});
     }
     return posList.at(rand() % posList.size());
