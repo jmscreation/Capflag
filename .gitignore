@@ -39,3 +39,7 @@ resources/raw/
 *.layout
 *.depend
 *.ini
+
+
+#allow build bat for windows build
+!build.bat
