@@ -1,5 +1,5 @@
 @echo off
-REM			BUILD SCRIPT JMSCREATOR v1.5
+REM			BUILD SCRIPT JMSCREATOR v1.6
 
 REM Set Compiler Settings Here
 
@@ -9,7 +9,11 @@ set WINRES=windres
 set ARCH=64
 set OUTPUT=CapFlag.exe
 
-del %OUTPUT%>nul
+
+
+del %OUTPUT% 2>nul
+
+setlocal enabledelayedexpansion
 
 if not exist .objs64 (
 	echo Creating Object Directory Structure...
@@ -18,23 +22,23 @@ if not exist .objs64 (
 
 echo Building Dependency Libraries...
 if not exist .objs64\pathgrid.o (
-	%CPP% -std=c++20 -DSFML_STATIC -I.\library\SFML-2.5.1\include -I.\game -I.\library -I.\library\engine -I.\library\sha1 -I.\library\pathgrid -ICapflag\game -c library\pathgrid\pathgrid.cpp -o .objs64\pathgrid.o
+	start /B "%%~nF.o" %CPP% -std=c++20 -DSFML_STATIC -I.\library\SFML-2.5.1\include -I.\game -I.\library -I.\library\engine -I.\library\sha1 -I.\library\pathgrid -ICapflag\game -c library\pathgrid\pathgrid.cpp -o .objs64\pathgrid.o
 )
 if not exist .objs64\sha1.o (
-	%CPP% -std=c++20 -DSFML_STATIC -I.\library\SFML-2.5.1\include -I.\game -I.\library -I.\library\engine -I.\library\sha1 -I.\library\pathgrid -ICapflag\game -c library\sha1\sha1.cpp -o .objs64\sha1.o
+	start /B "%%~nF.o" %CPP% -std=c++20 -DSFML_STATIC -I.\library\SFML-2.5.1\include -I.\game -I.\library -I.\library\engine -I.\library\sha1 -I.\library\pathgrid -ICapflag\game -c library\sha1\sha1.cpp -o .objs64\sha1.o
 )
 
 echo Building Game Files...
 for %%F in (game/*.cpp) do (
 	if not exist .objs64\%%~nF.o (
 		echo Building %%~nF.o
-		%CPP% -std=c++20 -DSFML_STATIC -I.\library\SFML-2.5.1\include -I.\game -I.\library -I.\library\engine -I.\library\sha1 -I.\library\pathgrid -ICapflag\game -c game\%%~nF.cpp -o .objs64\%%~nF.o
+		start /B "%%~nF.o" %CPP% -std=c++20 -DSFML_STATIC -I.\library\SFML-2.5.1\include -I.\game -I.\library -I.\library\engine -I.\library\sha1 -I.\library\pathgrid -ICapflag\game -c game\%%~nF.cpp -o .objs64\%%~nF.o
 	)
 )
 for %%F in (*.cpp) do (
 	if not exist .objs64\%%~nF.o (
 		echo Building %%~nF.o
-		%CPP% -std=c++20 -DSFML_STATIC -I.\library\SFML-2.5.1\include -I.\game -I.\library -I.\library\engine -I.\library\sha1 -I.\library\pathgrid -ICapflag\game -c %%F -o .objs64\%%~nF.o
+		start /B "%%~nF.o" %CPP% -std=c++20 -DSFML_STATIC -I.\library\SFML-2.5.1\include -I.\game -I.\library -I.\library\engine -I.\library\sha1 -I.\library\pathgrid -ICapflag\game -c %%F -o .objs64\%%~nF.o
 	)
 )
 
@@ -43,18 +47,30 @@ if not exist .objs64\resource.res (
 	%WINRES% -J rc -O coff -i game\resource.rc -o .objs64\resource.res
 )
 
-setlocal enabledelayedexpansion
+
+REM Wait for building process to finish
+:loop
+for /f %%G in ('tasklist ^| find /c "%CPP%"') do ( set count=%%G )
+if %count%==0 (
+	goto linker
+) else (
+	timeout /t 2 /nobreak>nul
+	goto loop
+)
+
+:linker
+
 set "files="
 for /f "delims=" %%A in ('dir /b /a-d ".objs64\%*" ') do set "files=!files! .objs64\%%A"
 
 echo Linking Executable...
-if %ARCH% == "64" (
+if %ARCH%==64 (
 	set SFML_LIBRARY_DIR=.\library\SFML-2.5.1\lib64
 	set PORTAUDIO_LIB=portaudio64-s
 	set ENGINE_LIB=engine64-s
 	goto link
 )
-if %ARCH% == "32" (
+if %ARCH%==32 (
 	set SFML_LIBRARY_DIR=.\library\SFML-2.5.1\lib
 	set PORTAUDIO_LIB=portaudio-s
 	set ENGINE_LIB=engine-s
