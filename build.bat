@@ -1,5 +1,5 @@
 @echo off
-REM			BUILD SCRIPT JMSCREATOR v1.6
+REM		CAPFLAG BUILD SCRIPT v1.6
 
 REM Set Compiler Settings Here
 
