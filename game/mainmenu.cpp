@@ -9,6 +9,7 @@ const string MainMenu::uniqueID = sha1(to_string(int(time(NULL)) + rand()));
 MplayClient* MainMenu::localClient = new MplayClient;
 ServerSearch* MainMenu::searchController = new ServerSearch;
 ServerAnnounce* MainMenu::broadcastController = new ServerAnnounce(MainMenu::uniqueID);
+unsigned int MainMenu::musicVolume = 100;
 
 int MainMenu::currentTeam = TEAM_BLUE;
 string MainMenu::playerName = "";
@@ -35,7 +36,18 @@ MainMenu::MainMenu(): currentLevel(new ImportMap(true)), currentTime(GameControl
     sf::IpAddress addr(sf::IpAddress::getLocalAddress());
 
     do { /// Load Config File - Allow Looping Until Satisfied
-        ConfigFile cfg(CONFIG_FILE);
+
+        string dir = MyGame::current().parameters()[0];
+        dir = dir.erase(dir.find_last_of("\\"));
+
+        ConfigFile cfg(dir + "\\" + CONFIG_FILE);
+
+		cout << "Loading configuration file..." << endl;
+
+		for(const Entry& e : cfg.getEntries()){
+			cout << "\t" << e.name << ":" << e.value << "\n";
+		}
+
         if(cfg.entryExists("ip")){
             addr = cfg.getEntry("ip")->value;
         } else {
@@ -66,6 +78,18 @@ MainMenu::MainMenu(): currentLevel(new ImportMap(true)), currentTime(GameControl
             cfg.addEntry({"name", playerName});
         }
 
+		if(cfg.entryExists("music")){
+            try {
+				musicVolume = stoi(cfg.getEntry("music")->value);
+            } catch(const exception& e){
+                cfg.deleteEntry("music"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"music", to_string(musicVolume)}))
+                continue;
+        }
+
         if(cfg.entryExists("gametimer")){
             try {
                 GameController::settings.gameTime = stoi(cfg.getEntry("gametimer")->value) ;
@@ -78,6 +102,7 @@ MainMenu::MainMenu(): currentLevel(new ImportMap(true)), currentTime(GameControl
                 continue;
         }
 
+
         if(cfg.entryExists("magsize")){
             try {
                 GameController::settings.magSize = stoi(cfg.getEntry("magsize")->value) ;
@@ -87,6 +112,18 @@ MainMenu::MainMenu(): currentLevel(new ImportMap(true)), currentTime(GameControl
             }
         } else {
             if(cfg.addEntry({"magsize", "25"}))
+                continue;
+        }
+
+        if(cfg.entryExists("tm_respawn")){
+            try {
+                GameController::settings.respawnTime = stoi(cfg.getEntry("tm_respawn")->value) ;
+            } catch(const exception& e){
+                cfg.deleteEntry("tm_respawn"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"tm_respawn", "8"}))
                 continue;
         }
 

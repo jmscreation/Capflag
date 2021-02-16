@@ -160,16 +160,16 @@ void MyGame::collision_with_object(CFGameObject* m, CFGameObject* o, float speed
 }
 
 sf::Packet& operator<<(sf::Packet& out, const GameSettings& in) {
-    out << sf::Uint32(in.magSize) << sf::Uint32(in.gameTime) << sf::Uint32(in.bonusSpawnTime);
+    out << sf::Uint32(in.magSize) << sf::Uint32(in.gameTime) << sf::Uint32(in.bonusSpawnTime) << sf::Uint32(in.respawnTime);
     for(int i=0; i<BONUS_TYPE_COUNT; ++i) out << sf::Uint32(in.bonusDuration[i]);
 
     return out;
 }
 
 sf::Packet& operator>>(sf::Packet& in, GameSettings& out) {
-    sf::Uint32 mSize, gTime, bsTime, bTime;
+    sf::Uint32 mSize, gTime, bsTime, rspTime, bTime;
 
-    in >> mSize >> gTime >> bsTime;
+    in >> mSize >> gTime >> bsTime >> rspTime;
     for(int i=0; i<BONUS_TYPE_COUNT; ++i){
         in >> bTime;
         out.bonusDuration[i] = bTime;
@@ -178,6 +178,7 @@ sf::Packet& operator>>(sf::Packet& in, GameSettings& out) {
     out.magSize = mSize;
     out.gameTime = gTime;
     out.bonusSpawnTime = bsTime;
+    out.respawnTime = rspTime;
 
     return in;
 }

@@ -179,7 +179,7 @@ void MapObj_Player::step(sf::Time &delta) {
             if(alpha < 255) sprite.setColor(sf::Color(255, 255, 255, ++alpha));
         }
     } else {
-        if(isMe() && respawn.getElapsedTime().asSeconds() > RESPAWN_TIME){
+        if(isMe() && respawn.getElapsedTime().asSeconds() > GameController::settings.respawnTime ){
             respawnMe();
         }
     }

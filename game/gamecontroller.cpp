@@ -33,7 +33,7 @@ GameController::GameController() {
 
     inputCont = new InputController;
     music = MyGame::audioPack->getSound(AUDIO_GAME_MUSIC)->loop();
-    music->volume(0.35);
+    music->volume(float(MainMenu::musicVolume) / 100.f);
 
     playerControlled = nullptr;
     viewFollows = nullptr;

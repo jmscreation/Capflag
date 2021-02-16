@@ -9,7 +9,6 @@
 
 #define CONFIG_FILE     "config.ini"
 
-#define RESPAWN_TIME    6 //seconds for respawn
 #define GAMESTART_TIME  3 //seconds for game start
 
 #define TEAM_BLUE   0
@@ -58,7 +57,7 @@
 
 
 struct GameSettings {
-    unsigned int magSize, gameTime, bonusSpawnTime,
+    unsigned int magSize, gameTime, bonusSpawnTime, respawnTime,
                 bonusDuration[BONUS_TYPE_COUNT];
 };
 

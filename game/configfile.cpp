@@ -4,7 +4,7 @@ using namespace std;
 
 ConfigFile::ConfigFile(const string& path): filePath(path), entryList({}) {
     if(!syncFileIn()){
-        syncFileOut();
+        if(!syncFileOut()) cerr << "error writing configuration" << endl;
     }
 }
 

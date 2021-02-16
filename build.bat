@@ -1,5 +1,5 @@
 @echo off
-REM		CAPFLAG BUILD SCRIPT v1.6
+REM		CAPFLAG BUILD SCRIPT v1.7
 
 REM Set Compiler Settings Here
 
@@ -8,7 +8,7 @@ set GPP=g++
 set WINRES=windres
 set ARCH=64
 set OUTPUT=CapFlag.exe
-
+set DEBUGMODE=0
 
 
 del %OUTPUT% 2>nul
@@ -76,12 +76,17 @@ if %ARCH%==32 (
 	set ENGINE_LIB=engine-s
 	goto link
 )
-
 echo ARCH Must be 32 or 64! Make sure ARCH matches the compiler's architecture!
 goto finish
-
 :link
-%GPP% -L.\library -L%SFML_LIBRARY_DIR% -o %OUTPUT% %files% -s -static-libstdc++ -static-libgcc -static -lpthread -static-libstdc++ -static-libgcc -static -l%ENGINE_LIB% -l%PORTAUDIO_LIB% -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lsfml-network-s -lsetupapi -lwinmm -lopengl32 -lgdi32 -lfreetype -lws2_32 -lcomdlg32 -mwindows
+
+if %DEBUGMODE% GTR 0 (
+	set MWINDOWS=
+) else (
+	set MWINDOWS=-mwindows
+)
+
+%GPP% -L.\library -L%SFML_LIBRARY_DIR% -o %OUTPUT% %files% -s -static-libstdc++ -static-libgcc -static -lpthread -static-libstdc++ -static-libgcc -static -l%ENGINE_LIB% -l%PORTAUDIO_LIB% -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lsfml-network-s -lsetupapi -lwinmm -lopengl32 -lgdi32 -lfreetype -lws2_32 -lcomdlg32 %MWINDOWS%
 
 :finish
 if exist .\%OUTPUT% (

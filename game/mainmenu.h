@@ -21,7 +21,8 @@ class MainMenu : public Engine::Active , public Engine::ScreenDrawable {
         void step(sf::Time&);
         void drawScreenBack(sf::RenderWindow &win, sf::Time &delta);
 
-        static int currentTeam;
+        static unsigned int musicVolume;
+		static int currentTeam;
         static std::string playerName;
         unsigned int& currentTime; // link directly to game settings
 
