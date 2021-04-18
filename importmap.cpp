@@ -21,7 +21,7 @@ ImportMap::ImportMap(const string& path, bool showWarnings) {
 ImportMap::~ImportMap() {
 }
 
-void ImportMap::loadMap(const string& path) {
+bool ImportMap::loadMap(const string& path) {
     lastError = "";
     hasError = false;
     warningList.clear();
@@ -30,27 +30,29 @@ void ImportMap::loadMap(const string& path) {
 
     if(!readFileData(path.data())){
         setError("File doesn't exist or is corrupt");
-        return;
+        return false;
     }
     if(!loadMapContent()){
         setError(string("Map content is corrupt: ") + lastError);
-        return;
+        return false;
     }
     if(displayWarnings) for(string& msg : warningList) cout << "Warning: " << msg << endl;
+    return true;
 }
 
-void ImportMap::loadMap(const stringstream& data) {
+bool ImportMap::loadMap(const stringstream& data) {
     lastError = "";
     warningList.clear();
     hasError = false;
     mapName = "";
-    content.str(data.str());
+    content.str(data.str()); // copy data buffer
     contentLength = data.str().size();
     if(!loadMapContent()){
         setError(string("Map content is corrupt: ") + lastError);
-        return;
+        return false;
     }
     if(displayWarnings) for(string& msg : warningList) cout << "Warning: " << msg << endl;
+    return true;
 }
 
 bool ImportMap::readFileData(const char* path) {
@@ -62,25 +64,26 @@ bool ImportMap::readFileData(const char* path) {
     auto size = file.tellg();
     file.seekg(0, file.beg);
 
-    unsigned int read = 0;
-    while(!file.eof() && read < size && file.tellg() != -1){
+    content.str(""); // clear buffer
+    unsigned int bytesRead = 0;
+    while(!file.eof() && bytesRead < size && file.tellg() != -1){
         char chk[128];
         file.read(chk, 128);
-        read += file.gcount();
+        bytesRead += file.gcount();
         content.write(chk, file.gcount());
     }
     file.close();
-    contentLength = read;
-    return (read == size);
+    contentLength = bytesRead;
+    return (bytesRead == size);
 
 }
 
 bool ImportMap::loadMapContent() {
     unsigned long long isize, header;
-    content.seekg(0, content.beg);
+    content.seekg(0, content.beg); // read from beginning of data stream
     objectList.clear();
 
-    if(!read(isize)) return setError("Invalid Size");
+    if(!read(isize)) return setError("Invalid Size"); // load size header
     if(contentLength != isize) return setError("Content Length Mismatch");
 
     read(header);
@@ -92,12 +95,12 @@ bool ImportMap::loadMapContent() {
         read(fileVersion);
         switch(fileVersion){
             case 0: return setError("Cannot load a file version this old");
-            case 1: addWarning("This is an old map version. Please update this map to the latest version"); break;
+            case 1: addWarning("This is an old map version.\nPlease update this map to the latest version"); break;
         }
     }
     if(fileVersion > 0)
         read(mapName);
-    if(fileVersion > FILE_VERSION) addWarning("This file version seems to be newer. The file may not load properly.");
+    if(fileVersion > FILE_VERSION) addWarning("This file version seems to be newer.\nThe file may not load properly.");
     bool complete = false;
     while(1){
         unsigned char cmd;
@@ -124,10 +127,10 @@ bool ImportMap::loadMapContent() {
                 unsigned char objectType, team;
                 unsigned short x, y;
                 read(objectType);
-                read(x);
-                read(y);
                 if(fileVersion >= 2){
                     read(team);
+                    read(x);
+                    read(y);
                     switch(objectType){
                         case GAMEOBJ_FLAG:
                         case GAMEOBJ_BASE:{
@@ -138,6 +141,8 @@ bool ImportMap::loadMapContent() {
                         break;}
                     }
                 } else {    ///Old version has a different object type for the different teams
+                    read(x);
+                    read(y);
                     switch(objectType){
                         case GAMEOBJ_BASE_A:
                             objectType = GAMEOBJ_BASE;
@@ -158,7 +163,7 @@ bool ImportMap::loadMapContent() {
                 }
             break;}
             default:{
-                addWarning(string("Loading a non-existent object entry [") + to_string(cmd) + "] or map file is corrupt." );
+                addWarning(string("Found non-existent object entry [") + to_string(cmd) + "]\nMap file is corrupt." );
             break;}
         }
         if(complete) break;
@@ -171,7 +176,8 @@ bool ImportMap::loadMapContent() {
     if(_eof != 10) addWarning("End of file not written correctly");
 
     if(fileVersion < 2){    ///Old Version Manipulation - Do stuff because it's old
-        //Fix offsets
+
+        //Fix offsets to 0,0
         unsigned int xMin = INT_MAX, yMin = INT_MAX;
         for(GameObjectType& obj : objectList){
             if(obj.x < xMin) xMin = obj.x;
@@ -192,8 +198,8 @@ bool ImportMap::loadMapContent() {
             objectList.push_back({0, y*32, GAMEOBJ_WALL, 0});
             objectList.push_back({32*width, y*32, GAMEOBJ_WALL, 0});
         }
-
     }
+
 
     return true;
 
@@ -212,6 +218,12 @@ bool ImportMap::loadGame() {
                 break;
             case GAMEOBJ_FLAG:
                 new MapObj_Flag(obj.x, obj.y, obj.prop); //flag at pos with team prop
+                break;
+            case GAMEOBJ_AI:
+                if(GameController::current().isHost){
+                    MapObj_AI* ii = new MapObj_AI(obj.x, obj.y, obj.prop); // new AI at pos with team prop
+                    MplayController::spawnPlayer(ii);
+                }
                 break;
         }
     }

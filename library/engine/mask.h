@@ -18,7 +18,7 @@ namespace Engine {
         void initCircle(float radius,float xorig=0,float yorig=0);
         void initRect(float w,float h,float xorig=0,float yorig=0);
 
-        bool collidesWith(Mask& m);
+        bool collidesWith(const Mask& m);
 
         int type;
         float x,y, xorig,yorig;

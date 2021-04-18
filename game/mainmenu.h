@@ -21,12 +21,12 @@ class MainMenu : public Engine::Active , public Engine::ScreenDrawable {
         void step(sf::Time&);
         void drawScreenBack(sf::RenderWindow &win, sf::Time &delta);
 
+        static ImportMap* currentLevel;
         static unsigned int musicVolume;
 		static int currentTeam;
         static std::string playerName;
         unsigned int& currentTime; // link directly to game settings
 
-        ImportMap* currentLevel;
         sf::Text menuTitle, menuError;
         std::string message, errorMessage, gameStatus;
         sf::Clock resetError;

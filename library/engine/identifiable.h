@@ -1,22 +1,29 @@
 #ifndef __ENGINE_IDENTIFIABLE_H__
 #define __ENGINE_IDENTIFIABLE_H__
 
+/*
+    IDENTITY_COLLISION_ERRORS = true
+        Used to throw a runtime error if an identifiable object is instantiated with an existing ID
+*/
+
 namespace Engine {
 
 	class Identifiable {
 		static ArbList<Identifiable*> idmap;
-		static int currentID;
+		static unsigned int currentID;
 
-		int id;
+		unsigned int id;
 	public:
-		Identifiable(int id=0);
+		static bool IDENTITY_COLLISION_ERRORS;
+
+		Identifiable(unsigned int id=0);
 		virtual ~Identifiable();
 
 		virtual int type() = 0;
 
-		int getID() { return id; }
+		inline unsigned int getID() { return id; }
 
-		static Identifiable* getByID(int id);
+		static Identifiable* getByID(unsigned int id);
 	};
 
 }

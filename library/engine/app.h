@@ -13,6 +13,9 @@ namespace Engine {
         App(int width, int height, std::string title="", sf::Uint32 style=sf::Style::Default, bool defaultView=true);
         App(bool defaultView=true);
         virtual ~App();
+		
+		App(const App&) = delete; // remove copy constructor
+		App& operator=(const App&) = delete;
 
         static App& current() { return *currentApp; }
 

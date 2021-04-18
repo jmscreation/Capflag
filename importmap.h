@@ -18,8 +18,8 @@ class ImportMap
         inline const std::stringstream& getContent() const { return content; }
         inline const std::string& getName() const { return mapName; }
 
-        void loadMap(const std::string&);
-        void loadMap(const std::stringstream&);
+        bool loadMap(const std::string&);
+        bool loadMap(const std::stringstream&);
         bool loadGame();
 
     protected:

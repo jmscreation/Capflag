@@ -42,10 +42,10 @@ GameController::GameController() {
     gameScores[TEAM_BLUE] = 0;
 
     // background tiles
-    for(int i=0; i < 3500; i++){
+    for(int i=0; i < 10500; i++){
         AnimatedSprite* spr = new AnimatedSprite(&MyGame::gameAnimations->Background);
         background.push_back(spr);
-        spr->setPosition(float(i % 60)*32 - 480, float(i/60)*32 - 480);
+        spr->setPosition(float(i % 100)*32 - 480, float(i/100)*32 - 480);
     }
     gameArea = {1000,1000,0,0};
     for(CFGameObject* op : CFGameObject::gameObjects){
@@ -197,7 +197,7 @@ void GameController::step(sf::Time &delta){
             gameStarted = true;
             gameBegin();
         } else {
-            if(getGameTimeLeft() == 0) {
+            if(getGameTimeLeft() == 0 || gameEnd) {
                 int winner[2] = {0, -1}; /// { Highest Score Points ,  Team That Is In Lead }
                 for(int i=0;i<gameScores.size();++i){
                     if(gameScores[i] > winner[0]){

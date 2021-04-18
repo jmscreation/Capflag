@@ -15,7 +15,7 @@ template<class T> typename SortList<T>::Node* SortList<T>::add(float t,T v) {
     return N;
 }
 template<class T> typename SortList<T>::Node* SortList<T>::add(Node* N) {
-    N->t=N->t<0?0:N->t>1?1:N->t; // clamp t
+    N->t = N->t<0 ? 0 : (N->t>1 ? 1 : N->t); // clamp t
     
     int sect = (int)(N->t*(SL_DIVS-0.0001));
     Node *p=NULL,*n;

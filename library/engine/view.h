@@ -13,8 +13,8 @@ namespace Engine {
         void screenToWorld(int sx,int sy,float &wx,float &wy);
         void worldToScreen(float wx,float wy,int &sx,int &sy);
 
-        float viewMouseX();
-        float viewMouseY();
+        float viewMouseX() const;
+        float viewMouseY() const;
 
         void zoomAt(int sx,int sy,float factor);
 

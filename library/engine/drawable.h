@@ -68,8 +68,11 @@ namespace Engine {
     class ScreenDrawable {
         static SortList<ScreenDrawable*> list;
     public:
-        ScreenDrawable(View* vw=NULL,float d=0);
+        ScreenDrawable(View* vw=nullptr,float d=0);
         virtual ~ScreenDrawable();
+		
+		ScreenDrawable(const ScreenDrawable&) = delete; // no copy constructor
+		ScreenDrawable& operator=(const ScreenDrawable&) = delete; // no copy assignment operator
 
         float depth() { return _depth; }
         void depth(float d);

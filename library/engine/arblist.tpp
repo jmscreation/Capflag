@@ -23,7 +23,7 @@ template<class T> void ArbList<T>::AllIterator::setParent(ArbList<T>* par) {
 }
 
 template<class T> ArbList<T>::ArbList(int sz): size(sz) {
-    size = size<1 ? 1 : size>67108864 ? 67108864 : size; // limit size; technically, true working max is 46340, but 67108864 should ever be more than sufficient
+    size = size<1 ? 1 : (size>67108864 ? 67108864 : size); // limit size; technically, true working max is 46340, but 67108864 should ever be more than sufficient
 
     items = new Item*[size];
     memset(items,0,size * sizeof(Item*));
@@ -106,13 +106,11 @@ template<class T> void ArbList<T>::clear() {
     }
 
     for(int i=0; i<size; i++) { // destroy each item-set
-        Item *curitem, *pitem;
-
-        curitem = items[i];
+        Item *curitem = items[i];
         items[i] = NULL;
 
         while(curitem != NULL) { // destroy each item reference in a cell
-            pitem = curitem;
+            Item *pitem = curitem;
             curitem = curitem->next;
             delete pitem;
         }

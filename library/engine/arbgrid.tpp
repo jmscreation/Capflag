@@ -44,7 +44,7 @@ template<class T> void ArbGrid<T>::AllIterator::setParent(ArbGrid<T>* par) {
 }
 
 template<class T> ArbGrid<T>::ArbGrid(int sz): size(sz) {
-    size = size<1 ? 1 : size>8192 ? 8192 : size; // limit size; technically, true working max is 46340, but 8192 should ever be more than sufficient
+    size = size<1 ? 1 : (size>8192 ? 8192 : size); // limit size; technically, true working max is 46340, but 8192 should ever be more than sufficient
 
     int sq = size*size;
 
@@ -116,7 +116,7 @@ template<class T> void ArbGrid<T>::cellClear(int x,int y) {
 
     if(c == NULL) return; // there is no cell here
 
-    Item* item = c->start, *pitem;
+    Item* item = c->start;
 
     for(auto iter: allIterators) {
         if(iter->cell == c) {
@@ -130,7 +130,7 @@ template<class T> void ArbGrid<T>::cellClear(int x,int y) {
             if(iter->item == item)
                 iter->item = NULL; // cell will be empty; NULL out iterator
         }
-        pitem = item;
+        Item *pitem = item;
         item = item->next;
         delete pitem;
     }
@@ -148,8 +148,8 @@ template<class T> void ArbGrid<T>::clear() {
     }
 
     for(int i=0,sq=size*size;i<sq;i++) { // destroy each cell-set
-        Cell *curcell, *pcell;
-        Item *curitem, *pitem;
+        Cell *curcell;
+        Item *curitem;
 
         curcell = grid[i];
         grid[i] = NULL;
@@ -157,12 +157,12 @@ template<class T> void ArbGrid<T>::clear() {
         while(curcell != NULL) { // destroy each cell in a cell-set
             curitem = curcell->start;
             while(curitem != NULL) { // destroy each item reference in a cell
-                pitem = curitem;
+                Item *pitem = curitem;
                 curitem = curitem->next;
                 delete pitem;
             }
 
-            pcell = curcell;
+            Cell *pcell = curcell;
             curcell = curcell->next;
             delete pcell;
         }

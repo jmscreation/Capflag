@@ -81,12 +81,12 @@ goto finish
 :link
 
 if %DEBUGMODE% GTR 0 (
-	set MWINDOWS=
+	set MWINDOWS=-d
 ) else (
 	set MWINDOWS=-mwindows
 )
 
-%GPP% -L.\library -L%SFML_LIBRARY_DIR% -o %OUTPUT% %files% -s -static-libstdc++ -static-libgcc -static -lpthread -static-libstdc++ -static-libgcc -static -l%ENGINE_LIB% -l%PORTAUDIO_LIB% -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lsfml-network-s -lsetupapi -lwinmm -lopengl32 -lgdi32 -lfreetype -lws2_32 -lcomdlg32 %MWINDOWS%
+%GPP% -L.\library -L%SFML_LIBRARY_DIR% -o %OUTPUT% %files% -static-libstdc++ -static-libgcc -static -lpthread -static-libstdc++ -static-libgcc -static -l%ENGINE_LIB% -l%PORTAUDIO_LIB% -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lsfml-network-s -lsetupapi -lwinmm -lopengl32 -lgdi32 -lfreetype -lws2_32 -lcomdlg32 %MWINDOWS%
 
 :finish
 if exist .\%OUTPUT% (

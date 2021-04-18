@@ -14,8 +14,9 @@ unsigned int MainMenu::musicVolume = 100;
 int MainMenu::currentTeam = TEAM_BLUE;
 string MainMenu::playerName = "";
 MsgBox* MainMenu::messageBox = nullptr;
+ImportMap* MainMenu::currentLevel = nullptr;
 
-MainMenu::MainMenu(): currentLevel(new ImportMap(true)), currentTime(GameController::settings.gameTime) {
+MainMenu::MainMenu(): currentTime(GameController::settings.gameTime) {
     assert(_this == NULL); _this = this;
     MyGame::current().window().create(sf::VideoMode(256, 256), "Main Menu", sf::Style::Titlebar);
     view().reset({0,0,256,256});
@@ -29,11 +30,14 @@ MainMenu::MainMenu(): currentLevel(new ImportMap(true)), currentTime(GameControl
     menuTitle.setFillColor(sf::Color::White);
 
     menuError.setFont(*MyGame::fontPack->getFont(FNT_ERROR));
-    menuError.setCharacterSize(10);
-    menuError.setPosition(200, 200);
+    menuError.setCharacterSize(8);
+    menuError.setPosition(20, 170);
     menuError.setFillColor(sf::Color::Red);
+    menuError.setOrigin(0, 0);
 
     sf::IpAddress addr(sf::IpAddress::getLocalAddress());
+
+    if(currentLevel == nullptr) currentLevel = new ImportMap(true);
 
     do { /// Load Config File - Allow Looping Until Satisfied
 
@@ -181,7 +185,6 @@ MainMenu::MainMenu(): currentLevel(new ImportMap(true)), currentTime(GameControl
 }
 
 MainMenu::~MainMenu() {
-    if(currentLevel != nullptr) delete currentLevel;
     _this = nullptr;
 }
 
@@ -189,6 +192,10 @@ void MainMenu::freeMemory(){
     delete broadcastController;
     delete searchController;
     delete localClient;
+    if(currentLevel != nullptr){
+        delete currentLevel;
+        currentLevel = nullptr;
+    }
 }
 
 void MainMenu::startGame() {    //Server starts game
@@ -252,8 +259,9 @@ void MainMenu::step(sf::Time &delta) {
     /// Start The Game
     if(MyGame::current().window().hasFocus() && sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)){
         if(hold.getElapsedTime().asSeconds() > 0.3){
-            if(isHost) {
+            if(isHost && connected) {
                 cout << "Starting game..." << endl;
+                sendGameInfo();
                 sendCommand(MSG_START);
                 startGame();
                 if(_this == nullptr) return;
@@ -297,13 +305,19 @@ void MainMenu::step(sf::Time &delta) {
                 errorMessage = "No File Selected\n";
                 return;
             }
-            currentLevel->loadMap(path);
+            if(!currentLevel->loadMap(path)){
+                errorMessage = currentLevel->getLastError();
+                return;
+            }
+            while(currentLevel->hasWarnings()) {
+                 errorMessage += "\n" + currentLevel->getNextWarning();
+            }
             sendMap();
         }
 
     if(errorMessage != menuError.getString() ){
         menuError.setString(errorMessage);
-        menuError.setOrigin(menuError.getLocalBounds().width - menuError.getLocalBounds().left, 0);
+        //menuError.setOrigin(menuError.getLocalBounds().width - menuError.getLocalBounds().left, 0);
         resetError.restart();
     }
 
@@ -425,10 +439,12 @@ void MainMenu::step(sf::Time &delta) {
                     cout << sha1(level) << endl;
                     stringstream levelStream;
                     levelStream.str(level);
-                    currentLevel->loadMap(levelStream);
-                    if(currentLevel->errorOccurred()){
+                    if(!currentLevel->loadMap(levelStream)){
                         cout << currentLevel->getLastError() << endl;
+                        errorMessage = currentLevel->getLastError();
+                        continue;
                     }
+                    while(currentLevel->hasWarnings()) errorMessage += "\n" + currentLevel->getNextWarning();
                 }
                 if(cmd == CMD_GAME_INFO){
                     inData >> GameController::settings;

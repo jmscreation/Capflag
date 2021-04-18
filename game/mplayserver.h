@@ -14,9 +14,9 @@ class MplayServer {
 public:
     MplayServer();
     virtual ~MplayServer();
-    static inline bool isRunning() { return (_currentServer != NULL); }
-    static inline void closeServer() { if(_currentServer != NULL) delete _currentServer; }
-    static inline unsigned int getClientCount() { if(_currentServer == NULL) return 0; return _currentServer->clientList.size(); }
+    static inline bool isRunning() { return (_currentServer != nullptr); }
+    static inline void closeServer() { if(_currentServer != nullptr) delete _currentServer; }
+    static inline unsigned int getClientCount() { if(_currentServer == nullptr) return 0; return _currentServer->clientList.size(); }
 
 protected:
     sf::TcpListener server;

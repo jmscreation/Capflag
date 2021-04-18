@@ -471,7 +471,7 @@ void MapObj_AI::step(sf::Time& delta){
             for(CFGameObject* o : CFGameObject::gameObjects){
                 if(o == nullptr || o == this || (o->type() != GAMEOBJ_AI && o->type() != GAMEOBJ_PLAYER)) continue;
                 MapObj_Player* p = (MapObj_Player*)o;
-                if(p->team == team || p->alpha < 10) continue; // same team or player is invisible
+                if(p->team == team || p->alpha < 10 || p->isDead()) continue; // same team or player is invisible or player is dead
                 if(MyGame::collision_line(x(), y(), p->x(), p->y(), {GAMEOBJ_WALL})) continue;
                 float xd = x()-p->x(), yd = y()-p->y(), dist = pow(xd*xd+yd*yd, 0.5);
                 if(dist > 260) continue;
