@@ -273,6 +273,26 @@ void GameController::drawWorldFront(sf::RenderWindow& win, sf::Time& delta) {
             win.draw(point);
         }
     }
+
+    for(CFGameObject *o : CFGameObject::gameObjects){
+        if(o == nullptr || (o->type() != GAMEOBJ_PLAYER && o->type() != GAMEOBJ_AI)) continue;
+        
+        MapObj_Player &p = *(MapObj_Player*)o;
+        if(p.mask == nullptr) continue;
+
+        if(p.mask->type == MASK_CIRCLE){
+            sf::CircleShape point(p.mask->circle.radius);
+            point.setPosition(p.mask->x - p.mask->xorig, p.mask->y - p.mask->yorig);
+            point.setFillColor(sf::Color(0,255,0,128));
+            win.draw(point);
+        }
+        if(p.mask->type == MASK_RECT){
+            sf::RectangleShape box({p.mask->rect.w, p.mask->rect.h});
+            box.setPosition(p.mask->x - p.mask->xorig, p.mask->y - p.mask->yorig);
+            box.setFillColor(sf::Color(0,255,0,128));
+            win.draw(box);
+        }
+    }
     #endif
 
     if(playerControlled != nullptr){

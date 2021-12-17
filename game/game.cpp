@@ -101,7 +101,7 @@ bool lineRectIntersect(const sf::Vector2f& p1, const sf::Vector2f& p2, const sf:
     if (minX < rect.left) {
         minX = rect.left;
     }
-    // If Y-projections do not intersect then there's no intersection
+    // If Y-sf::Vector2fprojections do not intersect then there's no intersection
     if (minX > maxX) { return false; }
     // Find corresponding min and max Y for min and max X we found before
     auto minY = p1.y;
@@ -134,8 +134,40 @@ CFGameObject* MyGame::collision_line(float x1, float y1, float x2, float y2, vec
     return nullptr;
 }
 
-void MyGame::collision_with_object(CFGameObject* m, CFGameObject* o, float speed) {
+void MyGame::collision_with_object(CFGameObject* m, CFGameObject* o, float speed, float strength) {
     CFGameObject &me = *m, &other = *o;
+    if(other.mask != nullptr){
+        if(other.mask->type == MASK_CIRCLE){
+            sf::Vector2f ray = {me.x() - other.x(), me.y() - other.y()};
+            float len = sqrt(ray.x * ray.x + ray.y * ray.y);
+            if(len == 0) return;
+
+            sf::Vector2f norm = {ray.x / len, ray.y / len};
+
+            float overlap = (me.mask->circle.radius + other.mask->circle.radius - len) * strength;
+
+            if(overlap > 0) { // collision
+                me.move(overlap * norm.x, overlap * norm.y);
+            }
+        }
+        if(other.mask->type == MASK_RECT){
+            float nx = std::max(other.mask->x - other.mask->xorig, std::min(other.mask->x - other.mask->xorig + other.mask->rect.w, me.x()));
+            float ny = std::max(other.mask->y - other.mask->yorig, std::min(other.mask->y - other.mask->yorig + other.mask->rect.h, me.y()));
+
+            sf::Vector2f ray = {me.x() - nx, me.y() - ny};
+            float len = sqrt(ray.x * ray.x + ray.y * ray.y);
+            if(len == 0) return;
+
+            sf::Vector2f norm = {ray.x / len, ray.y / len};
+
+            float overlap = me.mask->circle.radius - len;
+
+            if(overlap > 0) { // collision
+                me.move(overlap * norm.x, overlap * norm.y);
+            }
+        }
+    }
+    /*
     speed*=0.5;
     float xdist = abs(other.x() - me.x()), ydist = abs(other.y() - me.y());
     if(xdist < ydist){
@@ -157,6 +189,7 @@ void MyGame::collision_with_object(CFGameObject* m, CFGameObject* o, float speed
             }
         }
     }
+    */
 }
 
 sf::Packet& operator<<(sf::Packet& out, const GameSettings& in) {

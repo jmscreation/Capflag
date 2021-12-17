@@ -171,7 +171,17 @@ void MapObj_Player::step(sf::Time &delta) {
         beginCollision();
         while(BaseCollidable* o = iterateCollidable()){
             if(o->mask == nullptr || !mask->collidesWith(*o->mask)) continue;
+            collide_static((CFGameObject*)o);
+        }
+        beginCollision();
+        while(BaseCollidable* o = iterateCollidable()){
+            if(o->mask == nullptr || !mask->collidesWith(*o->mask)) continue;
             collide((CFGameObject*)o);
+        }
+        beginCollision();
+        while(BaseCollidable* o = iterateCollidable()){
+            if(o->mask == nullptr || !mask->collidesWith(*o->mask)) continue;
+            collide_static((CFGameObject*)o);
         }
         if(invisible) {
             if(alpha > (isMe() ? 75 : 0) ) sprite.setColor(sf::Color(255, 255, 255, --alpha));
@@ -200,6 +210,18 @@ void MapObj_Player::step(sf::Time &delta) {
             }
         }
     }
+    #ifdef DEBUG_MODE
+    static bool click = false;
+        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Q)){
+            if(!click){
+                bonusType = BONUS_SPAWNAI;
+                activateBonus();
+                click = true;
+            }
+        } else {
+            click = false;
+        }
+    #endif
     CFGameObject::step(delta);  //inherit
 }
 void MapObj_Player::moveLeft() {
@@ -385,41 +407,11 @@ void MapObj_Player::collide(CFGameObject* o) {
         case GAMEOBJ_BASE:{
             MapObj_Base& other = *(MapObj_Base*)o;
             break;}
-        case GAMEOBJ_WALL:{
-            MapObj_Wall& other = *(MapObj_Wall*)o;
-
-            if(type() == GAMEOBJ_PLAYER){
-                MyGame::collision_with_object(this, o, speed);
-            } else {
-            }
-            break;}
         case GAMEOBJ_AI:
         case GAMEOBJ_PLAYER:{ // Collide with either a player OR AI
-            if(type() == GAMEOBJ_AI){ // I am AI
-                MapObj_AI& other = *(MapObj_AI*)o;
-                MapObj_AI& me = *(MapObj_AI*)this;
-
-                if(other.isDead()) break;
-
-                if((me.xto != -1 && (me.xto > x()) ^ (x() < other.x())) || (me.yto != -1 && (me.yto > y()) ^ (y() < other.y())) ) break;
-
-                float dir = MyGame::point_direction(other.x(), other.y(), x(), y()),
-                      vx, vy;
-                int cx, cy;
-                MyGame::lengthdir(speed*4,dir, vx, vy);
-
-                cx = round((x() + vx) / 8.f);
-                cy = round((y() + vy) / 8.f);
-                if(!grid->getStatic(cx, cy)) {
-                    setPosition(cx * 8, cy * 8);
-                }
-            }
-
-            if(type() == GAMEOBJ_PLAYER){ // I am Player
-                MapObj_Player& other = *(MapObj_Player*)o;
-                if(other.isDead()) break;
-                MyGame::collision_with_object(this, o, speed);
-            }
+            MapObj_Player& other = *(MapObj_Player*)o;
+            if(other.isDead()) break;
+            MyGame::collision_with_object(this, o, speed, (type() == GAMEOBJ_PLAYER ? 0.2f: 0.8f));
             break;}
         case GAMEOBJ_FLAG:{
             MapObj_Flag& other = *(MapObj_Flag*)o;
@@ -430,6 +422,19 @@ void MapObj_Player::collide(CFGameObject* o) {
             other.dead = true;
             bonusType = other.bonusType;
             cout << "Collected bonus: " << bonusType << endl;
+            break;}
+    }
+}
+
+void MapObj_Player::collide_static(CFGameObject* o) {
+    switch(o->type()){
+    
+        case GAMEOBJ_WALL:{
+            MapObj_Wall& other = *(MapObj_Wall*)o;
+
+            if(type() == GAMEOBJ_PLAYER || type() == GAMEOBJ_AI){
+                MyGame::collision_with_object(this, o, speed);
+            }
             break;}
     }
 }

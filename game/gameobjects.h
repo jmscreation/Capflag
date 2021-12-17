@@ -112,6 +112,7 @@ public:
     virtual void resetBonusStatus(int bonus);
 
     void collide(CFGameObject* other);
+    void collide_static(CFGameObject* other);
 
 protected:
     unsigned int magSize;

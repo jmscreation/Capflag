@@ -85,7 +85,7 @@ public:
     inline static const std::string teamName(int team) { if(team >= teamNames.size()) return ""; return teamNames.at(team); }
 
     static CFGameObject* collision_line(float x1, float y1, float x2, float y2, std::vector<int> objectTypes);
-    static void collision_with_object(CFGameObject* me, CFGameObject* other, float speed);
+    static void collision_with_object(CFGameObject* me, CFGameObject* other, float speed, float strength = 1.f);
     static const sf::Clock gameRuntime;
 
 private:
