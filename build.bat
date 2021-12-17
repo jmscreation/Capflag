@@ -13,8 +13,6 @@ set DEBUGMODE=0
 
 
 
-
-
 del %OUTPUT% 2>nul
 
 setlocal enabledelayedexpansion

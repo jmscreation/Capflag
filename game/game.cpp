@@ -147,7 +147,7 @@ void MyGame::collision_with_object(CFGameObject* m, CFGameObject* o, float speed
             float overlap = (me.mask->circle.radius + other.mask->circle.radius - len) * strength;
 
             if(overlap > 0) { // collision
-                me.move(overlap * norm.x, overlap * norm.y);
+                me.setPosition(me.x() + overlap * norm.x, me.y() + overlap * norm.y);
             }
         }
         if(other.mask->type == MASK_RECT){
@@ -156,14 +156,15 @@ void MyGame::collision_with_object(CFGameObject* m, CFGameObject* o, float speed
 
             sf::Vector2f ray = {me.x() - nx, me.y() - ny};
             float len = sqrt(ray.x * ray.x + ray.y * ray.y);
+            
             if(len == 0) return;
 
             sf::Vector2f norm = {ray.x / len, ray.y / len};
 
-            float overlap = me.mask->circle.radius - len;
+            float overlap = (me.mask->circle.radius - len) * strength;
 
             if(overlap > 0) { // collision
-                me.move(overlap * norm.x, overlap * norm.y);
+                me.setPosition(me.x() + overlap * norm.x, me.y() + overlap * norm.y);
             }
         }
     }

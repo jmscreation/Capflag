@@ -42,3 +42,4 @@ resources/raw/
 
 #allow build bat for windows build
 !build.bat
+.vscode/*
