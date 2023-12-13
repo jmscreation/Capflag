@@ -1,22 +1,27 @@
 #include "includes.h"
 
+#include <filesystem>
+
 using namespace Engine;
-using namespace std;
+using std::cout, std::endl;
+namespace fs = std::filesystem;
 
 MainMenu* MainMenu::_this = NULL;
 
-const string MainMenu::uniqueID = sha1(to_string(int(time(NULL)) + rand()));
+const std::string MainMenu::uniqueID = sha1(std::to_string(int(time(NULL)) + rand()));
 MplayClient* MainMenu::localClient = new MplayClient;
 ServerSearch* MainMenu::searchController = new ServerSearch;
 ServerAnnounce* MainMenu::broadcastController = new ServerAnnounce(MainMenu::uniqueID);
 unsigned int MainMenu::musicVolume = 100;
+bool MainMenu::playSounds = true;
 
 int MainMenu::currentTeam = TEAM_BLUE;
-string MainMenu::playerName = "";
+std::string MainMenu::playerName = "";
+std::string MainMenu::loadMapFile = "";
 MsgBox* MainMenu::messageBox = nullptr;
 ImportMap* MainMenu::currentLevel = nullptr;
 
-MainMenu::MainMenu(): currentTime(GameController::settings.gameTime) {
+MainMenu::MainMenu(): currentTime(GameController::settings.gameTime), tryOpen(false) {
     assert(_this == NULL); _this = this;
     MyGame::current().window().create(sf::VideoMode(256, 256), "Main Menu", sf::Style::Titlebar);
     view().reset({0,0,256,256});
@@ -35,142 +40,13 @@ MainMenu::MainMenu(): currentTime(GameController::settings.gameTime) {
     menuError.setFillColor(sf::Color::Red);
     menuError.setOrigin(0, 0);
 
-    sf::IpAddress addr(sf::IpAddress::getLocalAddress());
+    configIp = sf::IpAddress::getLocalAddress();
 
     if(currentLevel == nullptr) currentLevel = new ImportMap(true);
 
-    do { /// Load Config File - Allow Looping Until Satisfied
+    reloadConfigurationData();
 
-        string dir = MyGame::current().parameters()[0];
-        dir = dir.erase(dir.find_last_of("\\"));
-
-        ConfigFile cfg(dir + "\\" + CONFIG_FILE);
-
-		cout << "Loading configuration file..." << endl;
-
-		for(const Entry& e : cfg.getEntries()){
-			cout << "\t" << e.name << ":" << e.value << "\n";
-		}
-
-        if(cfg.entryExists("ip")){
-            addr = cfg.getEntry("ip")->value;
-        } else {
-            cfg.addEntry({"ip", addr.toString()});
-        }
-
-        if(cfg.entryExists("auto-server")){
-            string v = cfg.getEntry("auto-server")->value;
-            for(char &c : v) c = tolower(c);
-            if(v == "true"){
-                autoConnect = true;
-            } else if(v == "false"){
-                autoConnect = false;
-            } else {
-                autoConnect = true;
-                cfg.deleteEntry("auto-server");
-                cfg.addEntry({"auto-server", "true"});
-            }
-        } else {
-            autoConnect = true;
-            cfg.addEntry({"auto-server", "true"});
-        }
-
-        if(cfg.entryExists("name")){
-            playerName = cfg.getEntry("name")->value;
-        } else {
-            playerName = Dialog::EnvironmentVariable("username");
-            cfg.addEntry({"name", playerName});
-        }
-
-		if(cfg.entryExists("music")){
-            try {
-				musicVolume = stoi(cfg.getEntry("music")->value);
-            } catch(const exception& e){
-                cfg.deleteEntry("music"); // invalid entry
-                continue;
-            }
-        } else {
-            if(cfg.addEntry({"music", to_string(musicVolume)}))
-                continue;
-        }
-
-        if(cfg.entryExists("gametimer")){
-            try {
-                GameController::settings.gameTime = stoi(cfg.getEntry("gametimer")->value) ;
-            } catch(const exception& e){
-                cfg.deleteEntry("gametimer"); // invalid entry
-                continue;
-            }
-        } else {
-            if(cfg.addEntry({"gametimer", "120"}))
-                continue;
-        }
-
-
-        if(cfg.entryExists("magsize")){
-            try {
-                GameController::settings.magSize = stoi(cfg.getEntry("magsize")->value) ;
-            } catch(const exception& e){
-                cfg.deleteEntry("magsize"); // invalid entry
-                continue;
-            }
-        } else {
-            if(cfg.addEntry({"magsize", "25"}))
-                continue;
-        }
-
-        if(cfg.entryExists("tm_respawn")){
-            try {
-                GameController::settings.respawnTime = stoi(cfg.getEntry("tm_respawn")->value) ;
-            } catch(const exception& e){
-                cfg.deleteEntry("tm_respawn"); // invalid entry
-                continue;
-            }
-        } else {
-            if(cfg.addEntry({"tm_respawn", "8"}))
-                continue;
-        }
-
-        if(cfg.entryExists("tm_invisible")){
-            try {
-                GameController::settings.bonusDuration[BONUS_INVISIBLE] = stoi(cfg.getEntry("tm_invisible")->value) ;
-            } catch(const exception& e){
-                cfg.deleteEntry("tm_invisible"); // invalid entry
-                continue;
-            }
-        } else {
-            if(cfg.addEntry({"tm_invisible", "12"}))
-                continue;
-        }
-
-        if(cfg.entryExists("tm_speed")){
-            try {
-                GameController::settings.bonusDuration[BONUS_SPEED] = stoi(cfg.getEntry("tm_speed")->value) ;
-            } catch(const exception& e){
-                cfg.deleteEntry("tm_speed"); // invalid entry
-                continue;
-            }
-        } else {
-            if(cfg.addEntry({"tm_speed", "15"}))
-                continue;
-        }
-
-        if(cfg.entryExists("tm_bonus")){
-            try {
-                GameController::settings.bonusSpawnTime = stoi(cfg.getEntry("tm_bonus")->value) ;
-            } catch(const exception& e){
-                cfg.deleteEntry("tm_bonus"); // invalid entry
-                continue;
-            }
-        } else {
-            if(cfg.addEntry({"tm_bonus", "10"}))
-                continue;
-        }
-
-        break; // don't loop at end
-    } while(1);
-
-    connectTo = addr;
+    connectTo = configIp;
     isHost = MplayServer::isRunning();
     connected = false;
     if(!autoConnect){
@@ -178,7 +54,7 @@ MainMenu::MainMenu(): currentTime(GameController::settings.gameTime) {
     }
 
     if(messageBox != nullptr){
-        MessageBox(MyGame::current().window().getSystemHandle(), messageBox->text.data(), messageBox->title.data(), messageBox->flags);
+        MessageBox(MyGame::current().window().getSystemHandle(), messageBox->text.c_str(), messageBox->title.c_str(), messageBox->flags);
         delete messageBox;
         messageBox = nullptr;
     }
@@ -209,7 +85,7 @@ void MainMenu::startGame() {    //Server starts game
         delete this;
         return;
     } else {
-        errorMessage = string("Error loading map -> \n") + currentLevel->getLastError();
+        errorMessage = std::string("Error loading map -> \n") + currentLevel->getLastError();
     }
 }
 
@@ -234,10 +110,195 @@ void MainMenu::sendGameInfo() {
     localClient->sendData(buf);
 }
 
+void MainMenu::reloadConfigurationData() {
+    do { /// Load Config File - Allow Looping Until Satisfied
+
+        std::string dir = MyGame::current().parameters()[0];
+        dir = dir.erase(dir.find_last_of("\\"));
+
+        ConfigFile cfg(dir + "\\" + CONFIG_FILE);
+
+		cout << "Loading configuration file..." << endl;
+
+		for(const Entry& e : cfg.getEntries()){
+			cout << "\t" << e.name << ":" << e.value << "\n";
+		}
+
+        if(cfg.entryExists("ip")){
+            configIp = cfg.getEntry("ip")->value;
+        } else {
+            cfg.addEntry({"ip", configIp.toString()});
+        }
+
+        if(cfg.entryExists("auto-server")){
+            std::string v = cfg.getEntry("auto-server")->value;
+            for(char &c : v) c = tolower(c);
+            if(v == "true"){
+                autoConnect = true;
+            } else if(v == "false"){
+                autoConnect = false;
+            } else {
+                autoConnect = true;
+                cfg.deleteEntry("auto-server");
+                cfg.addEntry({"auto-server", "true"});
+            }
+        } else {
+            autoConnect = true;
+            cfg.addEntry({"auto-server", "true"});
+        }
+
+        if(cfg.entryExists("name")){
+            playerName = cfg.getEntry("name")->value;
+        } else {
+            playerName = Dialog::EnvironmentVariable("username");
+            cfg.addEntry({"name", playerName});
+        }
+
+		if(cfg.entryExists("music")){
+            try {
+				musicVolume = stoi(cfg.getEntry("music")->value);
+            } catch(const std::exception& e){
+                cfg.deleteEntry("music"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"music", std::to_string(musicVolume)}))
+                continue;
+        }
+
+        if(cfg.entryExists("playSounds")){
+            std::string v = cfg.getEntry("playSounds")->value;
+            for(char &c : v) c = tolower(c);
+            if(v == "true"){
+                playSounds = true;
+            } else if(v == "false"){
+                playSounds = false;
+            } else {
+                cfg.deleteEntry("playSounds"); // invalid entry
+                cfg.addEntry({"playSounds", "true"});
+            }
+        } else {
+            if(cfg.addEntry({"playSounds", "true"}))
+                continue;
+        }
+
+        if(cfg.entryExists("loadMapFile")){
+            loadMapFile = cfg.getEntry("loadMapFile")->value;
+        } else {
+            loadMapFile = "";
+            cfg.addEntry({"loadMapFile", ""});
+        }
+
+        if(cfg.entryExists("gametimer")){
+            try {
+                GameController::settings.gameTime = stoi(cfg.getEntry("gametimer")->value) ;
+            } catch(const std::exception& e){
+                cfg.deleteEntry("gametimer"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"gametimer", "120"}))
+                continue;
+        }
+
+
+        if(cfg.entryExists("magsize")){
+            try {
+                GameController::settings.magSize = stoi(cfg.getEntry("magsize")->value) ;
+            } catch(const std::exception& e){
+                cfg.deleteEntry("magsize"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"magsize", "25"}))
+                continue;
+        }
+
+        if(cfg.entryExists("tm_respawn")){
+            try {
+                GameController::settings.respawnTime = stoi(cfg.getEntry("tm_respawn")->value) ;
+            } catch(const std::exception& e){
+                cfg.deleteEntry("tm_respawn"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"tm_respawn", "8"}))
+                continue;
+        }
+
+        if(cfg.entryExists("tm_invisible")){
+            try {
+                GameController::settings.bonusDuration[BONUS_INVISIBLE] = stoi(cfg.getEntry("tm_invisible")->value) ;
+            } catch(const std::exception& e){
+                cfg.deleteEntry("tm_invisible"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"tm_invisible", "12"}))
+                continue;
+        }
+
+        if(cfg.entryExists("tm_speed")){
+            try {
+                GameController::settings.bonusDuration[BONUS_SPEED] = std::stoi(cfg.getEntry("tm_speed")->value) ;
+            } catch(const std::exception& e){
+                cfg.deleteEntry("tm_speed"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"tm_speed", "15"}))
+                continue;
+        }
+
+        if(cfg.entryExists("tm_bonus")){
+            try {
+                GameController::settings.bonusSpawnTime = std::stoi(cfg.getEntry("tm_bonus")->value) ;
+            } catch(const std::exception& e){
+                cfg.deleteEntry("tm_bonus"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"tm_bonus", "10"}))
+                continue;
+        }
+
+        if(cfg.entryExists("game_start_time")){
+            try {
+                GameController::settings.gameStartTime = std::clamp(std::stoi(cfg.getEntry("game_start_time")->value), 1, 15);
+            } catch(const std::exception& e){
+                cfg.deleteEntry("game_start_time"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"game_start_time", "3"}))
+                continue;
+        }
+
+        if(cfg.entryExists("auto_spawn_ai")){
+            try {
+                GameController::settings.autoAiSpawner = std::stoi(cfg.getEntry("auto_spawn_ai")->value) ;
+            } catch(const std::exception& e){
+                cfg.deleteEntry("auto_spawn_ai"); // invalid entry
+                continue;
+            }
+        } else {
+            if(cfg.addEntry({"auto_spawn_ai", "0"}))
+                continue;
+        }
+
+        break; // don't loop at end
+    } while(1);
+}
+
 void MainMenu::onConnect() {
+    currentTeam = TEAM_BLUE;
+
     cout << "Connected to server successfully" << endl;
     if(!isHost){
         gameStatus = "Waiting for host to start...";
+    } else {
+        tryOpen = true;
+        reloadConfigurationData();
     }
     sf::Packet buf;
     buf << sf::Uint8(CMD_NEW_CLIENT) << playerName; //tell everyone that I connected
@@ -252,8 +313,8 @@ void MainMenu::onDisconnect() {
 sf::Clock hold; // static global member for button keypress
 void MainMenu::step(sf::Time &delta) {
     if(menuStart.getElapsedTime().asSeconds() < 1) return;
-    menuTitle.setString(string("Main Menu\n\n" + gameStatus + "\nGame Level: ")
-                        + currentLevel->getName() + "\nGame Time: " + to_string(currentTime)
+    menuTitle.setString(std::string("Main Menu\n\n" + gameStatus + "\nGame Level: ")
+                        + currentLevel->getName() + "\nGame Time: " + std::to_string(currentTime)
                         + "\nYour Team: " + MyGame::teamName(currentTeam)
                         + "\nPress Enter to start\n\n" + message);
     /// Start The Game
@@ -279,8 +340,11 @@ void MainMenu::step(sf::Time &delta) {
     }
     /// Change Team
     if(MyGame::current().window().hasFocus() && (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Left))){
-        if(hold.getElapsedTime().asSeconds() > 0.3){
-            currentTeam = !currentTeam;
+        if(GameController::settings.autoAiSpawner == 0 && hold.getElapsedTime().asSeconds() > 0.3){
+            int delta = (sf::Keyboard::isKeyPressed(sf::Keyboard::Right) ? 1 :
+                        (sf::Keyboard::isKeyPressed(sf::Keyboard::Left) ? -1 : 0)
+                        );
+            currentTeam = (TEAM_COUNT + currentTeam + delta) % TEAM_COUNT;
             hold.restart();
         }
     }
@@ -296,11 +360,23 @@ void MainMenu::step(sf::Time &delta) {
             }
         }
     }
+    
     /// Open Map File
-    if(MyGame::current().window().hasFocus() && (sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) || sf::Keyboard::isKeyPressed(sf::Keyboard::RControl))
-        && sf::Keyboard::isKeyPressed(sf::Keyboard::O) && isHost){
-            string path;
-            Dialog::LoadDialog(path, "C:\\Users\\Shock\\Desktop\\GM Stuff\\Levels\\", {{"Map Files(*.map)", "*.map"}}, 0, 0, "Open Map File");
+    if(isHost){
+        bool autoLoadMap = (fs::exists(loadMapFile) && tryOpen && currentLevel->getObjectList().empty());
+
+        if((
+            ( sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) || sf::Keyboard::isKeyPressed(sf::Keyboard::RControl)) &&
+            sf::Keyboard::isKeyPressed(sf::Keyboard::O) &&
+            MyGame::current().window().hasFocus() ) || autoLoadMap){
+
+            std::string path;
+            if(autoLoadMap){
+                tryOpen = false;
+                path = loadMapFile;
+            } else {
+                Dialog::LoadDialog(path, fs::path(loadMapFile).remove_filename().string(), {{"Map Files(*.map)", "*.map"}}, 0, 0, "Open Map File");
+            }
             if(!path.size()){
                 errorMessage = "No File Selected\n";
                 return;
@@ -314,6 +390,7 @@ void MainMenu::step(sf::Time &delta) {
             }
             sendMap();
         }
+    }
 
     if(errorMessage != menuError.getString() ){
         menuError.setString(errorMessage);
@@ -327,7 +404,7 @@ void MainMenu::step(sf::Time &delta) {
 
     if((searchController->serverCount() || !autoConnect) && refreshRate.getElapsedTime().asSeconds() > 4) {   ///negotiate who should be host
         ServerSearch::ServerMember* main = nullptr;
-        vector<ServerSearch::ServerMember> slist = searchController->serverList();
+        std::vector<ServerSearch::ServerMember> slist = searchController->serverList();
         for(ServerSearch::ServerMember& i : slist) {
             if(i.name == uniqueID) continue;
             if(main == nullptr || i.alive > main->alive){
@@ -359,7 +436,7 @@ void MainMenu::step(sf::Time &delta) {
 
         if(!localClient->isConnected() && !localClient->isConnecting()) {
             if(!autoConnect) cout << "Manual server connect:" << endl;
-            message = string("Connecting to server ") + connectTo.toString() + "...\n";
+            message = std::string("Connecting to server ") + connectTo.toString() + "...\n";
             localClient->connectToHost(connectTo, GAME_PORT);
             //sf::sleep(sf::seconds(1));
         }
@@ -373,7 +450,7 @@ void MainMenu::step(sf::Time &delta) {
             connected = true;
         }
         //when connected
-        message = string("Connected to a ") + (isHost ? "local" : "remote") + " server.";
+        message = std::string("Connected to a ") + (isHost ? "local" : "remote") + " server.";
         if(connectTo != localClient->getIp()) {
             localClient->disconnect();
             message = "Found a better server to connect to...";
@@ -383,8 +460,8 @@ void MainMenu::step(sf::Time &delta) {
             testClock.restart();
             //sf::Packet outData;
             if(isHost) {
-                gameStatus = to_string(MplayServer::getClientCount()) + " client(s) connected...";
-                //outData << sf::Uint8(CMD_ACTIVE) << string("Server Runtime " + to_string(floor(MyGame::gameRuntime.getElapsedTime().asSeconds())) );
+                gameStatus = std::to_string(MplayServer::getClientCount()) + " client(s) connected...";
+                //outData << sf::Uint8(CMD_ACTIVE) << std::string("Server Runtime " + std::to_string(floor(MyGame::gameRuntime.getElapsedTime().asSeconds())) );
                 //localClient->sendData(outData);
             }
         }
@@ -406,7 +483,7 @@ void MainMenu::step(sf::Time &delta) {
                     break;
                 }
                 if(cmd == CMD_ACTIVE){
-                    string msg;
+                    std::string msg;
                     inData >> msg;
                     errorMessage = msg;
                 }
@@ -434,10 +511,10 @@ void MainMenu::step(sf::Time &delta) {
                 }
                 if(cmd == CMD_SEND_MAP){
                     cout << "Incoming map..." << endl;
-                    string level;
+                    std::string level;
                     inData >> level;
                     cout << sha1(level) << endl;
-                    stringstream levelStream;
+                    std::stringstream levelStream;
                     levelStream.str(level);
                     if(!currentLevel->loadMap(levelStream)){
                         cout << currentLevel->getLastError() << endl;
@@ -450,7 +527,7 @@ void MainMenu::step(sf::Time &delta) {
                     inData >> GameController::settings;
                 }
                 if(cmd == CMD_NEW_CLIENT){
-                    string nam;
+                    std::string nam;
                     inData >> nam;
                     cout << nam << " joined the game" << endl;
                     errorMessage += nam + " connected\n";

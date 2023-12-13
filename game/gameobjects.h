@@ -55,7 +55,7 @@ protected:
 
 class MapObj_Bullet : public CFGameObject {
 public:
-    MapObj_Bullet(int, int, int, float dir, float dmg=5);
+    MapObj_Bullet(int, int, int, float dir, int team, float dmg=5);
     virtual ~MapObj_Bullet();
     inline virtual int type() { return GAMEOBJ_BULLET; }
 
@@ -64,6 +64,7 @@ public:
 protected:
     float damage, speed;
     unsigned int myGenerator;
+    int team;
 
     virtual void step(sf::Time&);
 };
@@ -106,7 +107,7 @@ public:
     virtual void clearBonus();
     virtual void setDirection(float dir);
     virtual void activateBonus();
-    virtual void hitPlayer(float damage);
+    virtual void hitPlayer(float damage, sf::Vector2f hitFrom = {-1.f,-1.f});
     virtual void killMe();
     virtual void respawnMe();
     virtual void resetBonusStatus(int bonus);
@@ -122,7 +123,8 @@ protected:
 
     float speed, moveSpeed;
     bool canMove, invisible;
-    sf::Clock canShoot, respawn, reload, updatePath;
+    sf::Clock canShoot, respawn, reload, updatePath, hitFromTimeout;
+    sf::Vector2f hitFrom;
 
     virtual void step(sf::Time& delta);
 };
@@ -139,7 +141,7 @@ protected:
     static unsigned int AI_ID_Counter;
     MapObj_Player *follow, *fireAt;
     PathGrid::PathFinder* path;
-    float xto, yto;
+    float xto, yto, fakeX, fakeY;
 
     sf::Clock motionStart, motionStop, motionDir, searchEnemy;
 

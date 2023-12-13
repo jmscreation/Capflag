@@ -10,7 +10,8 @@
 //Include Necessary Header Files Here//
 
 #include <assert.h>
-#include "../classdefines.h"
+#include <algorithm>
+#include "classdefines.h"
 #include "pathgrid.h"
 #include "sha1.h"
 #include "resource.h"
@@ -34,6 +35,6 @@
 #include "mplaycontroller.h"
 
 
-#include "../importmap.h"
+#include "importmap.h"
 
 #endif // __INCLUDES_H_FILE__

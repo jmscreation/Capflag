@@ -1,7 +1,7 @@
 #include "includes.h"
 
-using namespace std;
 using namespace Engine;
+using std::cout, std::endl;
 
 GameController* GameController::currentController = nullptr;
 GameSettings GameController::settings;
@@ -13,7 +13,7 @@ GameController& GameController::current() {
 
 GameController::GameController() {
     windowedMode = sf::VideoMode(640, 480);
-    const vector<sf::VideoMode>& modes = sf::VideoMode::getFullscreenModes();
+    const std::vector<sf::VideoMode>& modes = sf::VideoMode::getFullscreenModes();
     for(const sf::VideoMode& mode : modes){
         cout << mode.width << " x " << mode.height << " @ " << mode.bitsPerPixel << "bit" << endl;
     }
@@ -47,7 +47,7 @@ GameController::GameController() {
         background.push_back(spr);
         spr->setPosition(float(i % 100)*32 - 480, float(i/100)*32 - 480);
     }
-    gameArea = {1000,1000,0,0};
+    gameArea = {4096,4096,0,0};
     for(CFGameObject* op : CFGameObject::gameObjects){
         if(op == nullptr) continue;
         CFGameObject& o = *op;
@@ -61,13 +61,15 @@ GameController::GameController() {
         if(o.y() > gameArea.top + gameArea.height) gameArea.height = o.y() - gameArea.top;
     }
 
-    CFGameObject::grid = new PathGrid(gameArea.width / 8, gameArea.height / 8);
+    CFGameObject::grid = new PathGrid((gameArea.left + gameArea.width) / AI_GRID_SIZE + 1, (gameArea.top + gameArea.height) / AI_GRID_SIZE + 1);
     PathGrid &grid = *CFGameObject::grid;
 
     for(CFGameObject* o : CFGameObject::gameObjects){
         if(o == nullptr || o->type() != GAMEOBJ_WALL) continue;
-        int xx = o->x()/8 - 3, yy = o->y()/8 - 3;
-        grid.addStatic(xx, yy, 6, 6);
+        int maskSize = o->mask->rect.w;
+        int part = maskSize / AI_GRID_SIZE;
+        int xx = o->x() / AI_GRID_SIZE - part / 2, yy = o->y() / AI_GRID_SIZE - part / 2;
+        grid.addStatic(xx, yy, part, part);
     }
 }
 
@@ -77,7 +79,7 @@ GameController::~GameController() {
     delete CFGameObject::grid;
     for(AnimatedSprite* s : background) delete s;
 
-    vector<CFGameObject*> temp = CFGameObject::gameObjects;
+    std::vector<CFGameObject*> temp = CFGameObject::gameObjects;
     CFGameObject::gameObjects.clear();
     for(CFGameObject* o : temp) delete o;
 
@@ -160,7 +162,7 @@ void GameController::setControlPlayer(CFGameObject* obj) {
 }
 
 sf::Vector2f GameController::getBasePos(int team) {
-    vector<sf::Vector2f> posList;
+    std::vector<sf::Vector2f> posList;
     for(CFGameObject* o : CFGameObject::gameObjects){
         if(o == nullptr || o->type() != GAMEOBJ_BASE) continue;
         if( ((MapObj_Base*)o)->team == team ) posList.push_back({o->x(), o->y()});
@@ -192,7 +194,7 @@ void GameController::step(sf::Time &delta){
 
         v.move(to);
     }
-    if(startTimer.getElapsedTime().asSeconds() > GAMESTART_TIME) {
+    if(startTimer.getElapsedTime().asSeconds() > settings.gameStartTime) {
         if(!gameStarted){   //begin the game if it hasn't started
             gameStarted = true;
             gameBegin();
@@ -208,7 +210,7 @@ void GameController::step(sf::Time &delta){
                         winner[1] = -1;
                     }
                 }
-                string text;
+                std::string text;
                 if(winner[1] == -1){
                     text = "Game Ended In A Draw";
                 } else {
@@ -231,6 +233,42 @@ void GameController::step(sf::Time &delta){
             MplayController::spawnBonus(xx, yy, spawnBonus(xx, yy));
             spawnBonusTimer.restart();
         }
+        if(settings.autoAiSpawner){
+            auto MakeEnemyFollow = [&](MapObj_AI* ai){
+                for(CFGameObject* o : CFGameObject::gameObjects){
+                    if(o == nullptr || (o->type() != GAMEOBJ_PLAYER && o->type() != GAMEOBJ_AI)) continue;
+                    MapObj_Player* player = (MapObj_Player*)o;
+                    if(player->team == ai->team || player->alpha < 10) continue;
+
+                    if(!(rand() % 4)){
+                        ai->follow = player;
+                        break;
+                    }
+                };
+            };
+
+            auto SpawnAiEnemy = [&](){
+                sf::Vector2f pos(getBasePos(TEAM_RED));
+                MapObj_AI* p = new MapObj_AI(pos.x, pos.y, TEAM_RED);
+                MplayController::spawnPlayer(p);
+                MakeEnemyFollow(p);
+            };
+
+            if(spawnAiTimer.getElapsedTime().asSeconds() > settings.respawnTime){
+                SpawnAiEnemy();
+
+                spawnAiTimer.restart();
+            }
+
+            for(CFGameObject* o : CFGameObject::gameObjects){
+                if(o == nullptr || o->type() != GAMEOBJ_AI) continue;
+                MapObj_AI* ai = (MapObj_AI*)o;
+                if(ai->team != TEAM_RED || ai->follow != nullptr) continue;
+
+                MakeEnemyFollow(ai);
+            }
+        }
+
     }
 }
 
@@ -243,8 +281,8 @@ void GameController::drawWorldFront(sf::RenderWindow& win, sf::Time& delta) {
         for(int y=0; y<grid.getHeight(); ++y){
             for(int x=0; x<grid.getWidth(); ++x){
                 if(grid.getStatic(x, y)){
-                    sf::RectangleShape box({8, 8});
-                    box.setPosition(x*8, y*8);
+                    sf::RectangleShape box({AI_GRID_SIZE, AI_GRID_SIZE});
+                    box.setPosition(x * AI_GRID_SIZE, y*AI_GRID_SIZE);
                     box.setFillColor(sf::Color(255,0,0,128));
                     win.draw(box);
                 }
@@ -261,6 +299,10 @@ void GameController::drawWorldFront(sf::RenderWindow& win, sf::Time& delta) {
             point.setFillColor(sf::Color(0,255,0,128));
             win.draw(point);
         }
+        sf::CircleShape fakeP(4);
+        fakeP.setPosition(p.fakeX, p.fakeY); // AI next step
+        fakeP.setFillColor(sf::Color(255,0,255,128));
+        win.draw(fakeP);
     }
     for(CFGameObject *o : CFGameObject::gameObjects){
         if(o == nullptr || (o->type() != GAMEOBJ_PLAYER && o->type() != GAMEOBJ_AI)) continue;
@@ -268,7 +310,7 @@ void GameController::drawWorldFront(sf::RenderWindow& win, sf::Time& delta) {
         if(p.myPath != nullptr){
             sf::CircleShape point(4);
             int xx, yy; p.myPath->getDestination(xx, yy); // AI goal
-            point.setPosition(xx*8, yy*8);
+            point.setPosition(xx*AI_GRID_SIZE, yy*AI_GRID_SIZE);
             point.setFillColor(sf::Color(0,0,255,128));
             win.draw(point);
         }
@@ -301,7 +343,7 @@ void GameController::drawWorldFront(sf::RenderWindow& win, sf::Time& delta) {
         playerStats.setFont(*MyGame::fontPack->getFont(FNT_MAIN));
         playerStats.setCharacterSize(10);
         playerStats.setFillColor(sf::Color::Yellow);
-        playerStats.setString(string("Life: ") + to_string(p.life) + "\nBonus: " + getBonusName(p.bonusType));
+        playerStats.setString(std::string("Life: ") + std::to_string(p.life) + "\nBonus: " + getBonusName(p.bonusType));
         playerStats.setPosition(p.x(), p.y() - 40);
         win.draw(playerStats);
     }
@@ -310,6 +352,13 @@ void GameController::drawWorldFront(sf::RenderWindow& win, sf::Time& delta) {
         shape.setPosition((v.getCenter() - (v.getSize() / 2.0f)));
         shape.setFillColor(sf::Color::Black);
         win.draw(shape);
+        sf::Text countDown;
+        countDown.setFont(*MyGame::fontPack->getFont(FNT_MAIN));
+        countDown.setCharacterSize(48);
+        countDown.setFillColor(sf::Color::White);
+        countDown.setPosition(v.getCenter() - sf::Vector2f(48.f,48.f));
+        countDown.setString(std::to_string( uint32_t(double(settings.gameStartTime) - startTimer.getElapsedTime().asSeconds() + 1.0) ));
+        win.draw(countDown);
     } else {
         sf::RectangleShape bar({v.getSize().x, 32});
         bar.setPosition(v.getCenter() - (v.getSize() / 2.0f));
@@ -319,7 +368,7 @@ void GameController::drawWorldFront(sf::RenderWindow& win, sf::Time& delta) {
         barText.setFont(*MyGame::fontPack->getFont(FNT_MAIN));
         barText.setCharacterSize(10);
         barText.setFillColor(sf::Color::White);
-        barText.setString("Red Team Score: " + to_string(gameScores[TEAM_RED]) + " Blue Team Score: " + to_string(gameScores[TEAM_BLUE]) + "     Game Time: " + to_string(getGameTimeLeft()));
+        barText.setString("Red Team Score: " + std::to_string(gameScores[TEAM_RED]) + " Blue Team Score: " + std::to_string(gameScores[TEAM_BLUE]) + "     Game Time: " + std::to_string(getGameTimeLeft()));
         barText.setPosition(bar.getPosition().x + 64, bar.getPosition().y + 16);
 
         win.draw(bar);

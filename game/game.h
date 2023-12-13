@@ -9,8 +9,7 @@
 
 #define CONFIG_FILE     "config.ini"
 
-#define GAMESTART_TIME  3 //seconds for game start
-
+#define TEAM_COUNT  2
 #define TEAM_BLUE   0
 #define TEAM_RED    1
 //#define TEAM_ 2
@@ -55,9 +54,10 @@
 #define BONUS_GAINHEALTH        5
 #define BONUS_SPAWNAI           6
 
+#define AI_GRID_SIZE    16
 
 struct GameSettings {
-    unsigned int magSize, gameTime, bonusSpawnTime, respawnTime,
+    unsigned int magSize, gameTime, bonusSpawnTime, respawnTime, gameStartTime, autoAiSpawner,
                 bonusDuration[BONUS_TYPE_COUNT];
 };
 

@@ -25,6 +25,7 @@
 *.lai
 *.la
 *.lib
+*.a
 
 # Executables
 *.exe
@@ -39,7 +40,7 @@ resources/raw/
 *.depend
 *.ini
 
-
 #allow build bat for windows build
 !build.bat
 .vscode/*
+library/SFML-2.5.1

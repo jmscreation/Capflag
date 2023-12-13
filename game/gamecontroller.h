@@ -34,7 +34,7 @@ protected:
     GameController();
     InputController* inputCont;
     Engine::SoundInstance* music;
-    sf::Clock startTimer, spawnBonusTimer, gameTime;
+    sf::Clock startTimer, spawnBonusTimer, gameTime, spawnAiTimer;
     CFGameObject *viewFollows, *playerControlled;
     std::vector<Engine::AnimatedSprite*> background;
     sf::VideoMode windowedMode, fullMode;

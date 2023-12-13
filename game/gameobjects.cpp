@@ -1,7 +1,7 @@
 #include "includes.h"
 
-using namespace std;
 using namespace Engine;
+using std::cout, std::endl;
 
 MapObj_Wall::MapObj_Wall(int x, int y) : CFGameObject(x, y, type()) {
     InitMaskRectangle();
@@ -52,7 +52,7 @@ void MapObj_Flag::step(sf::Time &delta){
             tdir = MyGame::point_direction(x(), y(), tx, ty);
             if(abs(dir - tdir) > 3) dir += MyGame::direction_sign_toward(dir, tdir) * 3;
 
-            MyGame::lengthdir(min(5.f, dist / 50), dir, vx, vy);
+            MyGame::lengthdir(std::min(5.f, dist / 50), dir, vx, vy);
             move(vx, vy);
             mplayMoveUpdate = true;
         }
@@ -148,9 +148,23 @@ MapObj_Player::MapObj_Player(int x, int y, int t) : CFGameObject(x, y, type()) {
     xprev = x;
     yprev = y;
 
-    myPath = grid->generatePath(x/16, y/16);
+    hitFrom = sf::Vector2f(-1,-1);
+
+    myPath = grid->generatePath(x / AI_GRID_SIZE, y / AI_GRID_SIZE);
 }
 MapObj_Player::~MapObj_Player() {
+    for(CFGameObject* o : CFGameObject::gameObjects){
+        if(o == nullptr || o->type() != GAMEOBJ_AI) continue;
+        MapObj_AI &p = *(MapObj_AI*)o;
+        if(p.follow == this){
+            p.follow = nullptr;
+        }
+        if(p.path == myPath){
+            p.path = nullptr;
+        }
+        if(p.fireAt == this) p.fireAt = nullptr;
+    }
+
     delete myPath;
     GameController& cont = GameController::current();
     if(cont.getControlPlayer() == this) {
@@ -166,7 +180,7 @@ void MapObj_Player::step(sf::Time &delta) {
     if(canMove){
         float dist = fabs(MyGame::direction_loop(direction) - dir);
         if(dist > 2.f) {
-            direction += MyGame::direction_sign_toward(direction, dir) * fmin(1.f + (dist / 8.f), 15.f);
+            direction += MyGame::direction_sign_toward(direction, dir) * std::fmin(1.f + (dist / 8.f), 15.f);
         }
         beginCollision();
         while(BaseCollidable* o = iterateCollidable()){
@@ -193,9 +207,9 @@ void MapObj_Player::step(sf::Time &delta) {
             respawnMe();
         }
     }
-    if(updatePath.getElapsedTime().asSeconds() > 2){
+    if(updatePath.getElapsedTime().asSeconds() > 0.75){
         int _xx, _yy;
-        myPath->destination(x() / 8, y() / 8, true, -1);
+        myPath->destination(x() / AI_GRID_SIZE, y() / AI_GRID_SIZE, true, -1);
         updatePath.restart();
     }
 
@@ -256,7 +270,7 @@ void MapObj_Player::shootGun() {
         float xx, yy;
         MyGame::lengthdir(16, direction, xx, yy);
         playSoundDist(AUDIO_GUN);
-        new MapObj_Bullet(x() + xx, y() + yy, index, direction, 6 + rand()%5);
+        new MapObj_Bullet(x() + xx, y() + yy, index, direction, team, 6 + rand()%5);
         new MapObj_BulletImpact(x() + xx, y() + yy, direction, BULLET_IMPACT_SPARK, 30);
         if(invisible) alpha += 24; // slightly show when firing
         if(isMe() && !--ammo){
@@ -272,7 +286,7 @@ void MapObj_Player::shootGun() {
 void MapObj_Player::clearBonus() {
     bonusType = BONUS_NONE;
 }
-void MapObj_Player::hitPlayer(float damage) {
+void MapObj_Player::hitPlayer(float damage, sf::Vector2f hitPos) {
     if(!canMove) return;
     if((isAi && !isHost) || (!isAi && !isMe())) return;
 
@@ -281,6 +295,10 @@ void MapObj_Player::hitPlayer(float damage) {
         killMe();
     } else {
         life -= damage;
+        if(hitPos.x != -1 && hitPos.y != -1){
+            hitFrom = hitPos;
+            hitFromTimeout.restart();
+        }
     }
     mplayUpdated = true;
 }
@@ -317,6 +335,7 @@ void MapObj_Player::respawnMe() {
         bonusType = BONUS_NONE;
         #endif
         life = 100;
+        ammo = magSize;
         for(int i=0;i<BONUS_TYPE_COUNT;++i) bonusActive[i] = false; // bonus type active state
         GameController& cont = GameController::current();
         sf::Vector2f pos = cont.getBasePos(team);
@@ -445,6 +464,8 @@ MapObj_AI::MapObj_AI(int x, int y, int team) : MapObj_Player(x, y, team) {
     isAi = true;
     xto = -1;
     yto = -1;
+    fakeX = x;
+    fakeY = y;
 
     follow = nullptr;
     fireAt = nullptr;
@@ -452,16 +473,12 @@ MapObj_AI::MapObj_AI(int x, int y, int team) : MapObj_Player(x, y, team) {
 }
 
 MapObj_AI::~MapObj_AI() {
-    for(CFGameObject* o : CFGameObject::gameObjects){
-        if(o == nullptr || o->type() != GAMEOBJ_AI) continue;
-        MapObj_AI &p = *(MapObj_AI*)o;
-        if(p.follow == this) p.follow = nullptr;
-        if(p.fireAt == this) p.fireAt = nullptr;
-    }
 }
 
 void MapObj_AI::mouseButtonPress(sf::Event::MouseButtonEvent &evt){
     MapObj_Player* me = GameController::current().getControlPlayer();
+    if(me == nullptr) return;
+
     if(me->team != team) return;
 
     if(evt.button == sf::Mouse::Right){
@@ -472,7 +489,7 @@ void MapObj_AI::mouseButtonPress(sf::Event::MouseButtonEvent &evt){
 void MapObj_AI::step(sf::Time& delta){
     if(isHost){
         if(searchEnemy.getElapsedTime().asSeconds() > (fireAt==nullptr ? 1 : 3) ){
-            vector<MapObj_Player*> found;
+            std::vector<MapObj_Player*> found;
             for(CFGameObject* o : CFGameObject::gameObjects){
                 if(o == nullptr || o == this || (o->type() != GAMEOBJ_AI && o->type() != GAMEOBJ_PLAYER)) continue;
                 MapObj_Player* p = (MapObj_Player*)o;
@@ -496,10 +513,22 @@ void MapObj_AI::step(sf::Time& delta){
             if(follow == nullptr){
                 if(path == nullptr) path = fireAt->myPath;
             }
+            hitFrom.x = -1;
+        } else {
+            if(hitFromTimeout.getElapsedTime().asSeconds() < 4 && hitFrom.x != -1){
+                if(motionDir.getElapsedTime().asSeconds() > 0.2){
+                    setDirection(MyGame::point_direction(x(), y(), hitFrom.x, hitFrom.y) + (rand()%150 - 300)/10.f);
+                    motionDir.restart();
+                }
+                shootGun();
+            }
         }
 
         if(follow != nullptr){
-            if(path == nullptr) path = follow->myPath;
+            if(path == nullptr){
+                path = follow->myPath;
+            }
+
             if(fireAt == nullptr && motionDir.getElapsedTime().asSeconds() > 5){
                 float pxd = fabs(follow->x() - x()), pyd = fabs(follow->y() - y()), pDist = pow(pxd*pxd+pyd*pyd, 0.5);
                 if(pDist < 164){
@@ -518,19 +547,21 @@ void MapObj_AI::step(sf::Time& delta){
 
         if(xto == -1 && yto == -1){
             int bx, by, _xx, _yy;
-            bx = round((x())/8.f);
-            by = round((y())/8.f);
-            setPosition(bx * 8, by * 8);
+            bx = round(fakeX / AI_GRID_SIZE);
+            by = round(fakeY / AI_GRID_SIZE);
+            fakeX = bx * AI_GRID_SIZE;
+            fakeY = by * AI_GRID_SIZE;
 
             if(path != nullptr){
                 int xdest, ydest; path->getDestination(xdest, ydest);
-                float xd = (x() - xdest*8), yd = (y() - ydest*8), dist = pow(xd*xd+yd*yd, 0.5);
+                float xd = (fakeX - xdest*AI_GRID_SIZE), yd = (fakeY - ydest*AI_GRID_SIZE), dist = pow(xd*xd+yd*yd, 0.5);
                 if(dist > 80){
                     PathGrid::Step s = path->nextStep(bx, by, _xx, _yy, 16);
+
                     switch(s){
                         case PathGrid::Move:
-                            xto = _xx * 8;
-                            yto = _yy * 8;
+                            xto = _xx * AI_GRID_SIZE;
+                            yto = _yy * AI_GRID_SIZE;
                             break;
                         default:
                             xto = -1;
@@ -540,12 +571,42 @@ void MapObj_AI::step(sf::Time& delta){
                 } else {
                     path = nullptr;
                 }
+            } else {
+                fakeX = x();
+                fakeY = y();
             }
         }
+        float _prevX = fakeX, _prevY = fakeY;
+        float xd = fabs(xto - fakeX), yd = fabs(yto - fakeY);
+        if(xto != -1) {if(xd > speed*1.2) {if(xto < fakeX) fakeX -= speed; else fakeX += speed;} else xto = -1;}
+        if(yto != -1) {if(yd > speed*1.2) {if(yto < fakeY) fakeY -= speed; else fakeY += speed;} else yto = -1;}
 
-        float xd = fabs(xto - x()), yd = fabs(yto - y());
-        if(xto != -1) {if(xd > speed*1.1) {if(xto < x()) moveLeft(); else moveRight();} else xto = -1;}
-        if(yto != -1) {if(yd > speed*1.1) {if(yto < y()) moveUp(); else moveDown();} else yto = -1;}
+        beginCollision();
+        while(BaseCollidable* o = iterateCollidable()){
+            if(o == this || (o->type() != GAMEOBJ_PLAYER && o->type() != GAMEOBJ_AI) ||
+               o->mask == nullptr || o->mask->type != MASK_CIRCLE) continue;
+            float mxd = std::fabs(o->mask->x - fakeX), myd = std::fabs(o->mask->y - fakeY),
+                  mdist = pow(mxd*mxd + myd*myd, 0.5);
+            if(mdist < o->mask->circle.radius){
+                fakeX = _prevX;
+                fakeY = _prevY;
+                break;
+            }
+        }
+        
+        if(xto == -1 && yto == -1 && xd < 100 && yd < 100){
+            fakeX = x();
+            fakeY = y();
+        }
+
+        xd = fabs(fakeX - x()); yd = fabs(fakeY - y());
+        if(xd > speed*1.1) {if(fakeX < x()) moveLeft(); else moveRight();}
+        if(yd > speed*1.1) {if(fakeY < y()) moveUp(); else moveDown();}
+
+        if(xd > 32.f || yd > 32.f){
+            setPosition(fakeX, fakeY);
+            mplayUpdated = true;
+        }
 
         if(motionStop.getElapsedTime().asSeconds() > 3){
             path = nullptr;
@@ -584,7 +645,7 @@ void MapObj_AI::killMe() {
     }
 }
 
-MapObj_Bullet::MapObj_Bullet(int x, int y, int gen, float dir, float dmg) : CFGameObject(x, y, type()) {
+MapObj_Bullet::MapObj_Bullet(int x, int y, int gen, float dir, int team, float dmg) : CFGameObject(x, y, type()), team(team) {
     depth(0.4);
     direction = dir + float(-4 + rand() % 8);    //bullet direction of fire
     myGenerator = gen;  //bullet came from this index
@@ -626,7 +687,12 @@ void MapObj_Bullet::collide(CFGameObject* o) {
         case GAMEOBJ_PLAYER:{
             MapObj_Player& other = *(MapObj_Player*)o;
             if(other.index == myGenerator || other.isDead()) return;
-            other.hitPlayer(damage);
+            sf::Vector2f hitFrom(xprev,yprev);
+            if(team != other.team){
+                other.hitPlayer(damage, hitFrom); // enemy damage
+            } else {
+                other.hitPlayer(damage); // team damage
+            }
             playSoundDist(AUDIO_HURT);
             new MapObj_BulletImpact(x(), y(), direction, BULLET_IMPACT_HUMAN);
             break;}

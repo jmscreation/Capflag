@@ -13,6 +13,7 @@ class MainMenu : public Engine::Active , public Engine::ScreenDrawable {
         virtual ~MainMenu();
 
         void startGame();
+        static bool getPlaySounds() { return playSounds; }
 
         static void freeMemory();
     protected:
@@ -23,8 +24,10 @@ class MainMenu : public Engine::Active , public Engine::ScreenDrawable {
 
         static ImportMap* currentLevel;
         static unsigned int musicVolume;
+        static bool playSounds;
 		static int currentTeam;
         static std::string playerName;
+        static std::string loadMapFile;
         unsigned int& currentTime; // link directly to game settings
 
         sf::Text menuTitle, menuError;
@@ -33,6 +36,7 @@ class MainMenu : public Engine::Active , public Engine::ScreenDrawable {
         void sendCommand(sf::Uint8 msg);
         void sendMap();
         void sendGameInfo();
+        void reloadConfigurationData();
 
         virtual void onConnect();
         virtual void onDisconnect();
@@ -43,8 +47,8 @@ class MainMenu : public Engine::Active , public Engine::ScreenDrawable {
         static ServerSearch* searchController;
         static ServerAnnounce* broadcastController;
         static MsgBox* messageBox;
-        sf::IpAddress connectTo;
-        bool isHost, connected, autoConnect;
+        sf::IpAddress connectTo, configIp;
+        bool isHost, connected, autoConnect, tryOpen;
         sf::Clock refreshRate, menuStart, timeoutCheck;
         friend class GameController;
 };

@@ -1,7 +1,7 @@
 #include "includes.h"
 
-using namespace std;
 using namespace Engine;
+using std::cout;
 
 TextureResources* MyGame::texPack = nullptr;
 AudioResources* MyGame::audioPack = nullptr;
@@ -22,7 +22,7 @@ MyGame::MyGame(): App(1, 1, "", sf::Style::None){
     ///Load Game Resources
     texPack = new TextureResources({_PNG_GAME_SPRITES, _PNG_BACKGROUND});
     if(!texPack->successful()){
-        throw runtime_error("Texture Resources failed to load");
+        throw std::runtime_error("Texture Resources failed to load");
         exit(-1);
     }
     audioPack = new AudioResources({_OGG_MENU_MUSIC, _OGG_GAME_MUSIC,
@@ -33,7 +33,7 @@ MyGame::MyGame(): App(1, 1, "", sf::Style::None){
 
     fontPack = new FontResources({_FONT_MAIN, _FONT_MENU, _FONT_ERROR});
     if(!fontPack->successful()){
-        throw runtime_error("Font Resources failed to load");
+        throw std::runtime_error("Font Resources failed to load");
         exit(-1);
     }
     gameAnimations = new CFGameAnimations;  //Init game animations
@@ -122,10 +122,10 @@ bool lineRectIntersect(const sf::Vector2f& p1, const sf::Vector2f& p2, const sf:
     return true;
 }
 
-CFGameObject* MyGame::collision_line(float x1, float y1, float x2, float y2, vector<int>objectTypes) {
+CFGameObject* MyGame::collision_line(float x1, float y1, float x2, float y2, std::vector<int>objectTypes) {
     for(CFGameObject* o : CFGameObject::gameObjects){
         if(o == nullptr || o->mask == nullptr || o->mask->type != MASK_RECT) continue;
-        if(find(objectTypes.begin(), objectTypes.end(), o->type()) == objectTypes.end()) continue;
+        if(std::find(objectTypes.begin(), objectTypes.end(), o->type()) == objectTypes.end()) continue;
         //Engine::Mask::
         if(lineRectIntersect({x1, y1}, {x2, y2},
             (sf::FloatRect){o->x() - o->mask->xorig, o->y() - o->mask->yorig, (o->mask->rect).w, (o->mask->rect).h}))
@@ -156,7 +156,7 @@ void MyGame::collision_with_object(CFGameObject* m, CFGameObject* o, float speed
 
             sf::Vector2f ray = {me.x() - nx, me.y() - ny};
             float len = sqrt(ray.x * ray.x + ray.y * ray.y);
-            
+
             if(len == 0) return;
 
             sf::Vector2f norm = {ray.x / len, ray.y / len};
@@ -168,42 +168,19 @@ void MyGame::collision_with_object(CFGameObject* m, CFGameObject* o, float speed
             }
         }
     }
-    /*
-    speed*=0.5;
-    float xdist = abs(other.x() - me.x()), ydist = abs(other.y() - me.y());
-    if(xdist < ydist){
-        me.y(me.yprev);
-        if(ydist < 30){
-            if(me.y() > other.y()){
-                me.move(0, speed);
-            } else {
-                me.move(0, -speed);
-            }
-        }
-    } else {
-        me.x(me.xprev);
-        if(xdist < 30){
-            if(me.x() > other.x()){
-                me.move(speed, 0);
-            } else {
-                me.move(-speed, 0);
-            }
-        }
-    }
-    */
 }
 
 sf::Packet& operator<<(sf::Packet& out, const GameSettings& in) {
-    out << sf::Uint32(in.magSize) << sf::Uint32(in.gameTime) << sf::Uint32(in.bonusSpawnTime) << sf::Uint32(in.respawnTime);
+    out << sf::Uint32(in.magSize) << sf::Uint32(in.gameTime) << sf::Uint32(in.bonusSpawnTime) << sf::Uint32(in.respawnTime) << sf::Uint32(in.autoAiSpawner) << sf::Uint32(in.gameStartTime);
     for(int i=0; i<BONUS_TYPE_COUNT; ++i) out << sf::Uint32(in.bonusDuration[i]);
 
     return out;
 }
 
 sf::Packet& operator>>(sf::Packet& in, GameSettings& out) {
-    sf::Uint32 mSize, gTime, bsTime, rspTime, bTime;
+    sf::Uint32 mSize, gTime, bsTime, rspTime, autAi, gsTime, bTime;
 
-    in >> mSize >> gTime >> bsTime >> rspTime;
+    in >> mSize >> gTime >> bsTime >> rspTime >> autAi >> gsTime;
     for(int i=0; i<BONUS_TYPE_COUNT; ++i){
         in >> bTime;
         out.bonusDuration[i] = bTime;
@@ -213,6 +190,8 @@ sf::Packet& operator>>(sf::Packet& in, GameSettings& out) {
     out.gameTime = gTime;
     out.bonusSpawnTime = bsTime;
     out.respawnTime = rspTime;
+    out.autoAiSpawner = autAi;
+    out.gameStartTime = gsTime;
 
     return in;
 }

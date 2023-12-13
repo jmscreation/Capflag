@@ -1,8 +1,8 @@
 #include "includes.h"
 
-using namespace std;
+using std::ios, std::cout, std::cerr, std::endl;
 
-ConfigFile::ConfigFile(const string& path): filePath(path), entryList({}) {
+ConfigFile::ConfigFile(const std::string& path): filePath(path), entryList({}) {
     if(!syncFileIn()){
         if(!syncFileOut()) cerr << "error writing configuration" << endl;
     }
@@ -12,7 +12,7 @@ ConfigFile::~ConfigFile() {
 }
 
 bool ConfigFile::syncFileOut(){
-    string data;
+    std::string data;
     remove(filePath.data()); // delete old config file
     file.open(filePath, ios::out | ios::binary);
     if(!file.is_open()) return false;
@@ -101,7 +101,7 @@ void ConfigFile::dbAddEntry(const Entry& entry){
     entryList.push_back(entry); // add entry to cache database
 }
 
-bool ConfigFile::entryExists(const string& name) const {
+bool ConfigFile::entryExists(const std::string& name) const {
     for(const Entry& e : entryList) if(e.name == name) return true;
     return false;
 }
@@ -113,14 +113,14 @@ bool ConfigFile::addEntry(const Entry& entry){
     return syncFileOut();
 }
 
-const Entry* ConfigFile::getEntry(const string& name) const {
+const Entry* ConfigFile::getEntry(const std::string& name) const {
     for(const Entry& e : entryList){
         if(e.name == name) return &e; // return entry address
     }
     return nullptr; // not found - return null
 }
 
-void ConfigFile::deleteEntry(const string& name){
+void ConfigFile::deleteEntry(const std::string& name){
     bool changed = false;
     for(size_t i=0; i<entryList.size(); ++i){
         const Entry& e = entryList[i];

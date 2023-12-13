@@ -38,9 +38,9 @@
 #include "drawable.h"
 #include "gui.h"
 #include "gameobject.h"
-#include "..\main.h"
+#include "main.h"
 
-#include "..\defines.h"
+#include "defines.h"
 
 #ifndef ARB_GRID_CELLS
 #define ARB_GRID_CELLS 128

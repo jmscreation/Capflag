@@ -1,9 +1,9 @@
 #include "includes.h"
 
 using namespace Engine;
-using namespace std;
+using std::cout, std::endl;
 
-vector<CFGameObject*> CFGameObject::gameObjects = {};
+std::vector<CFGameObject*> CFGameObject::gameObjects = {};
 unsigned int CFGameObject::counter = 0;
 bool CFGameObject::isHost = MplayServer::isRunning();
 PathGrid* CFGameObject::grid = nullptr;
@@ -19,7 +19,7 @@ CFGameObject::CFGameObject(int x, int y, int ty, int xtra): GameObject(getAnimat
 
 CFGameObject::~CFGameObject() {
     if(gameObjects.empty()) return;
-    auto ind = find(gameObjects.begin(), gameObjects.end(), this);
+    auto ind = std::find(gameObjects.begin(), gameObjects.end(), this);
     if(ind != gameObjects.end()){
         gameObjects.erase(ind);
     } else {
@@ -36,7 +36,7 @@ Animation* CFGameObject::getAnimation(int ty, int xtra){
                 case BULLET_IMPACT_WALL: return &MyGame::gameAnimations->WallFlesh;
                 case BULLET_IMPACT_SPARK: return &MyGame::gameAnimations->BulletSpark;
             }
-            throw runtime_error((string("Cannot load animation for non-existent impact type [") + to_string(xtra) + "]").data());
+            throw std::runtime_error((std::string("Cannot load animation for non-existent impact type [") + std::to_string(xtra) + "]").data());
             return nullptr;}
         case GAMEOBJ_WALL: return &MyGame::gameAnimations->Wall;
         case GAMEOBJ_PLAYER: case GAMEOBJ_AI: return &MyGame::gameAnimations->Player;
@@ -45,12 +45,14 @@ Animation* CFGameObject::getAnimation(int ty, int xtra){
         case GAMEOBJ_PICKUP: return &MyGame::gameAnimations->Pickup;
         case GAMEOBJ_DEAD_BODY: return &MyGame::gameAnimations->DeadBody;
         default:
-            throw runtime_error((string("Cannot load animation for non-existent object type [") + to_string(ty) + "]").data());
+            throw std::runtime_error((std::string("Cannot load animation for non-existent object type [") + std::to_string(ty) + "]").data());
             return nullptr;
     }
 }
 
 SoundInstance* CFGameObject::playSound(unsigned int snd) {
+    if(!MainMenu::getPlaySounds()) return nullptr;
+
     SoundBuffer* sound = MyGame::audioPack->getSound(snd);
     if(sound != nullptr){
         return sound->play(true);
@@ -59,6 +61,8 @@ SoundInstance* CFGameObject::playSound(unsigned int snd) {
 }
 
 SoundInstance* CFGameObject::playSoundDist(unsigned int snd) {
+    if(!MainMenu::getPlaySounds()) return nullptr;
+    
     SoundInstance* ii = playSound(snd);
     if(ii != nullptr){
         sf::Vector2f center = MyGame::current().view().getCenter();
